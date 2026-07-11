@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sumdoc"
+version = "0.1.1"
+description = "Small Unix-style document conversion tools in one multicall command."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE", "COPYING"]
+authors = [
+    {name = "William Martinez Bas", email = "metfar@gmail.com"},
+]
+keywords = ["pdf", "markdown", "html", "ocr", "unix", "multicall"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+sumdoc = "sumdoc.cli:entry_point"
+
+[project.optional-dependencies]
+pdf = [
+    "PyMuPDF>=1.22",
+    "pdfminer.six>=20221105",
+]
+markdown = [
+    "Markdown>=3.5",
+    "markdownify>=0.11",
+    "WeasyPrint>=60",
+]
+ocr = [
+    "opencv-python>=4.8",
+    "pytesseract>=0.3.10",
+    "img2table>=1.2",
+    "tabulate>=0.9",
+]
+all = [
+    "PyMuPDF>=1.22",
+    "pdfminer.six>=20221105",
+    "Markdown>=3.5",
+    "markdownify>=0.11",
+    "WeasyPrint>=60",
+    "opencv-python>=4.8",
+    "pytesseract>=0.3.10",
+    "img2table>=1.2",
+    "tabulate>=0.9",
+]
+dev = [
+    "build>=1.2",
+    "pytest>=8",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+sumdoc = ["styles/*.css"]
