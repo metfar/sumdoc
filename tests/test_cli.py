@@ -54,3 +54,13 @@ def test_subcommand_selects_tool():
     tool, remaining = select_tool(None, "sumdoc", ["html2md", "page.html"]);
     assert tool.name == "html2md";
     assert remaining == ["page.html"];
+
+
+def test_core_markdown_dependencies_are_declared():
+    import tomllib;
+
+    project_root = Path(__file__).parents[1];
+    metadata = tomllib.loads((project_root / "pyproject.toml").read_text(encoding="utf-8"));
+    dependencies = metadata["project"]["dependencies"];
+    assert any(item.lower().startswith("markdown>") or item.lower().startswith("markdown=") for item in dependencies);
+    assert any(item.lower().startswith("markdownify>") or item.lower().startswith("markdownify=") for item in dependencies);

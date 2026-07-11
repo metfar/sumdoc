@@ -1,0 +1,2 @@
+[console_scripts]
+sumdoc = sumdoc.cli:entry_point
