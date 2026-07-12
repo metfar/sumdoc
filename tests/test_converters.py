@@ -105,3 +105,46 @@ def test_md2html_ansi_mode_converts_sgr_to_html():
     assert "ansi-fg-bright-blue" in html;
     assert "two</span>\n" in html;
     assert "\x1b" not in html;
+
+
+def test_png_webp_round_trip(tmp_path):
+    Image = pytest.importorskip("PIL.Image");
+    from sumdoc.tools import imageconvert;
+
+    png_path = tmp_path / "sample.png";
+    webp_path = tmp_path / "sample.webp";
+    roundtrip_path = tmp_path / "roundtrip.png";
+    Image.new("RGBA", (8, 8), (10, 20, 30, 128)).save(png_path, "PNG");
+    result = imageconvert.png2webp_main(
+        [str(png_path), "--lossless"],
+        GlobalOptions(output=str(webp_path), quiet=True),
+    );
+    assert result == 0;
+    assert webp_path.exists();
+    result = imageconvert.webp2png_main(
+        [str(webp_path)],
+        GlobalOptions(output=str(roundtrip_path), quiet=True),
+    );
+    assert result == 0;
+    assert roundtrip_path.exists();
+    with Image.open(roundtrip_path) as image:
+        assert image.mode == "RGBA";
+        assert image.size == (8, 8);
+
+
+def test_image_directory_conversion(tmp_path):
+    Image = pytest.importorskip("PIL.Image");
+    from sumdoc.tools import imageconvert;
+
+    source_dir = tmp_path / "source";
+    output_dir = tmp_path / "output";
+    source_dir.mkdir();
+    Image.new("RGB", (3, 3), (1, 2, 3)).save(source_dir / "one.png", "PNG");
+    Image.new("RGB", (3, 3), (4, 5, 6)).save(source_dir / "two.png", "PNG");
+    result = imageconvert.png2webp_main(
+        [str(source_dir), "--lossless"],
+        GlobalOptions(output_dir=str(output_dir), quiet=True),
+    );
+    assert result == 0;
+    assert (output_dir / "one.webp").exists();
+    assert (output_dir / "two.webp").exists();

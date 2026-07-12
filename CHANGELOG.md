@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 - 2026-07-12
+
+- Integrated the standalone image converter as the `png2webp` and `webp2png` multicall tools.
+- Added the `image2webp` and `image2png` aliases.
+- Added single-file and non-recursive directory conversion using SumDoc's shared output conventions.
+- Added WebP quality control and lossless conversion.
+- Added Pillow as the optional `image` dependency group and included it in `all`.
+- Added PNG/WebP round-trip and batch-conversion tests.
+
 ## 0.1.1 - 2026-07-11
 
 - Added `--line-breaks` / `--hard-wrap` to preserve source newlines while parsing Markdown.
