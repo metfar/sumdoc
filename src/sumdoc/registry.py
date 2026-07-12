@@ -36,13 +36,28 @@ class ToolSpec:
     module: str;
     description: str;
     aliases: tuple[str, ...] = ();
+    entry_point: str = "main";
 
     def load(self) -> Callable[[list[str], object], int]:
         module = import_module(self.module);
-        return (module.main);
+        return (getattr(module, self.entry_point));
 
 
 TOOLS = (
+    ToolSpec(
+        "png2webp",
+        "sumdoc.tools.imageconvert",
+        "Convert PNG images to WebP.",
+        aliases=("image2webp",),
+        entry_point="png2webp_main",
+    ),
+    ToolSpec(
+        "webp2png",
+        "sumdoc.tools.imageconvert",
+        "Convert WebP images to PNG.",
+        aliases=("image2png",),
+        entry_point="webp2png_main",
+    ),
     ToolSpec(
         "pdf2png",
         "sumdoc.tools.pdf2png",
