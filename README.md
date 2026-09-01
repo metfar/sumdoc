@@ -1,8 +1,8 @@
-# SumDoc
+# SumDoc 0.2.0
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
-A single executable can behave as `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
+A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
@@ -14,6 +14,9 @@ SumDoc is free software released under the GNU General Public License, version 2
 
 | Tool | Purpose | Aliases |
 |---|---|---|
+| `image2text` | Render raster images as ASCII or DOS/Spectrum-style Unicode blocks. | `image2ascii` |
+| `image2ansi` | Render raster images as true-color, 256-color, or 16-color ANSI half blocks. | — |
+| `image2braille` | Render raster images as Unicode Braille, optionally with ANSI color. | — |
 | `png2webp` | Convert PNG images to WebP, individually or in batches. | `image2webp` |
 | `webp2png` | Convert WebP images to PNG, individually or in batches. | `image2png` |
 | `pdf2png` | Render PDF pages as 300 or 600 DPI PNG files. | — |
@@ -53,14 +56,22 @@ sumdoc --install-links "$HOME/.local/bin"
 This creates links such as:
 
 ```text
-png2webp  -> sumdoc
-webp2png  -> sumdoc
+image2text    -> sumdoc
+image2ascii   -> sumdoc
+image2ansi    -> sumdoc
+image2braille -> sumdoc
+png2webp      -> sumdoc
+webp2png      -> sumdoc
 pdf2png   -> sumdoc
 pdf2txt   -> sumdoc
 png2text  -> sumdoc
-md2html   -> sumdoc
-html2md   -> sumdoc
-md2pdf    -> sumdoc
+md2html         -> sumdoc
+html2md         -> sumdoc
+md2pdf          -> sumdoc
+markdown2helpdb -> sumdoc
+md2helpdb       -> sumdoc
+helpdb2markdown -> sumdoc
+helpdb2md       -> sumdoc
 ```
 
 Remove links created by the same executable:
@@ -141,6 +152,79 @@ cat page.html | html2md -d output --name page
 ```
 
 ## Examples
+
+Render a portable ASCII approximation:
+
+```sh
+image2text picture.png --width 80
+```
+
+`image2ascii` is an alias of `image2text`. Five text styles are available:
+
+```sh
+image2text picture.png --style ascii
+image2text picture.png --style dos
+image2text picture.png --style blocks
+image2text picture.png --style mosaic
+image2text picture.png --style semigraphics
+```
+
+The `mosaic` style treats each terminal cell as a 2x2 bitmap and selects Unicode quadrant characters such as `▖`, `▗`, `▘`, `▙`, `▚`, `▛`, `▜`, `▝`, `▞`, and `▟`. It produces a deliberately DOS/Spectrum-like result while retaining more geometry than a simple luminance ramp. The `dos` and `blocks` styles use density ramps such as `░▒▓█` and `▏▎▍▌▋▊▉▇█`. A custom ramp can be supplied with `--chars`.
+
+The `semigraphics` style examines a 5x5 source patch for each terminal cell. It first recognizes arrowheads, then infers north/east/south/west line connectivity, and finally falls back to quadrant blocks or `░▒▓█` shading. This allows diagrams to preserve horizontal and vertical strokes, corners, tees, intersections, and arrows instead of treating every shape as an unrelated gray value:
+
+```sh
+image2text diagram.png --style semigraphics --line-style light
+image2text diagram.png --style semigraphics --line-style heavy
+image2text diagram.png --style semigraphics --line-style mixed
+image2text diagram.png --style semigraphics --line-style ascii --arrow-style ascii
+```
+
+Light lines use glyphs such as `│─┌┐└┘├┤┬┴┼`; heavy lines use `┃━┏┓┗┛┣┫┳┻╋`. The `mixed` family estimates the thickness of each connected direction and can select combinations such as `┥`, `┨`, `┝`, `┠`, `┷`, `┸`, `┯`, `┰`, `╂`, and `┿`. Arrow output can use either `< > ^ v` or `⯇ ⯈ ⯅ ⯆`. These glyphs form a structural alphabet rather than a luminance ramp: the selected character describes how a stroke crosses the cell.
+
+Render a chart after removing its original margins, then add deterministic text labels. The left label is written one character per terminal row:
+
+```sh
+image2text plot.png --style mosaic --chart --crop 66,18,17,44 \
+  --left-label num_items_sold --bottom-label log_pop --width 80
+```
+
+`--chart` measures color distance from the two dominant flat backgrounds. This helps suppress both a plot panel and an outer page margin while retaining markers, axes, and dark text. `--crop` uses source-pixel margins in the order left, top, right, bottom.
+
+Render the image with ANSI true color and half-block cells:
+
+```sh
+image2ansi picture.png --width 100 > picture.ansi
+```
+
+ANSI output can also use the same topology-aware structural glyphs while retaining their sampled colors:
+
+```sh
+image2ansi diagram.png --style semigraphics --line-style light --width 100
+image2ansi diagram.png --style semigraphics --line-style heavy --colors 256
+image2ansi diagram.png --style semigraphics --line-style mixed --colors truecolor
+```
+
+The ANSI stream is ordinary text and can continue through a SumDoc pipeline into HTML:
+
+```sh
+image2ansi picture.png --width 100 | md2html --ansi -o picture.html
+image2ansi diagram.png --style semigraphics | md2html --ansi -o diagram.html
+```
+
+Render a high-resolution monochrome Braille approximation:
+
+```sh
+image2braille plot.png --chart --width 100
+```
+
+Add ANSI color to the active Braille cells:
+
+```sh
+image2braille plot.png --chart --color --width 100 | md2html --ansi -o plot.html
+```
+
+The image-to-text tools accept PNG, WebP, JPEG, GIF, BMP, and TIFF input through Pillow. `image2text` is visual rendering; `png2text` remains the separate OCR tool for extracting words, code, tables, or Markdown.
 
 Convert one PNG image to WebP:
 
@@ -251,4 +335,31 @@ SumDoc is intentionally made from small operations that can be understood, combi
 
 A tool becomes more valuable when other people can study it, modify it, and pass it on.
 
-<p align=center><b>- oOo -</b></p>
+## Sum help documents
+
+SumDoc owns the conversion format used by Sum ecosystem help. The editable source is Markdown; `.helpdb` is a versioned UTF-8 JSON cache/interchange file that can always be regenerated.
+
+```sh
+markdown2helpdb help.md
+helpdb2markdown help.helpdb
+```
+
+The same tools are available through the multicall command and aliases:
+
+```sh
+sumdoc markdown2helpdb help.md
+sumdoc md2helpdb help.md
+sumdoc helpdb2markdown help.helpdb
+sumdoc helpdb2md help.helpdb
+```
+
+An explicit output file can be positional or selected with the standard SumDoc output option:
+
+```sh
+markdown2helpdb help.md build/language.helpdb
+markdown2helpdb help.md -o build/language.helpdb
+```
+
+The parser/serializer is also available as `sumdoc.helpdb.HelpCorpus` for documentation/build tooling. Runtime UIs do not need SumDoc merely to display an already compiled help database.
+
+<p align=center><b>- oOo -<b></p>

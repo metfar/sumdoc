@@ -148,3 +148,32 @@ def test_image_directory_conversion(tmp_path):
     assert result == 0;
     assert (output_dir / "one.webp").exists();
     assert (output_dir / "two.webp").exists();
+
+
+def test_help_markdown_helpdb_round_trip(tmp_path):
+    from sumdoc.helpdb import HelpCorpus;
+    from sumdoc.tools import helpconv;
+
+    source = tmp_path / "language.md";
+    database = tmp_path / "language.helpdb";
+    restored = tmp_path / "restored.md";
+    source.write_text(
+        "# Demo Help\n\nEditable source.\n\n## Console\n\n### PRINT\n\nWrites a value.\n\n"
+        "#### Syntax\n\n```text\nPRINT expression\n```\n\n"
+        "#### Functional example\n\n```basic\nPRINT 42\n```\n\n"
+        "#### See also\n\nINPUT\n\n#### Aliases\n\n?, SAY\n",
+        encoding="utf-8",
+    );
+    assert helpconv.markdown2helpdb_main(
+        [str(source), str(database)],
+        GlobalOptions(quiet=True),
+    ) == 0;
+    corpus = HelpCorpus.from_helpdb(database.read_text(encoding="utf-8"));
+    assert corpus.find_topic("?").name == "PRINT";
+    assert corpus.find_topic("SAY").example == "PRINT 42";
+    assert helpconv.helpdb2markdown_main(
+        [str(database), str(restored)],
+        GlobalOptions(quiet=True),
+    ) == 0;
+    reparsed = HelpCorpus.from_markdown(restored.read_text(encoding="utf-8"));
+    assert reparsed.find_topic("PRINT").syntax == ("PRINT expression",);

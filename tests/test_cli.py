@@ -64,3 +64,11 @@ def test_core_markdown_dependencies_are_declared():
     dependencies = metadata["project"]["dependencies"];
     assert any(item.lower().startswith("markdown>") or item.lower().startswith("markdown=") for item in dependencies);
     assert any(item.lower().startswith("markdownify>") or item.lower().startswith("markdownify=") for item in dependencies);
+
+
+def test_help_conversion_tools_are_registered():
+    from sumdoc.registry import resolve_tool;
+    assert resolve_tool("markdown2helpdb").name == "markdown2helpdb";
+    assert resolve_tool("md2helpdb").name == "markdown2helpdb";
+    assert resolve_tool("helpdb2markdown").name == "helpdb2markdown";
+    assert resolve_tool("helpdb2md").name == "helpdb2markdown";

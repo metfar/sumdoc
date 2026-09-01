@@ -45,6 +45,25 @@ class ToolSpec:
 
 TOOLS = (
     ToolSpec(
+        "image2text",
+        "sumdoc.tools.imagetext",
+        "Render images as ASCII, blocks, or topology-aware semigraphics.",
+        aliases=("image2ascii",),
+        entry_point="image2text_main",
+    ),
+    ToolSpec(
+        "image2ansi",
+        "sumdoc.tools.imagetext",
+        "Render images as ANSI color half-blocks or semigraphics.",
+        entry_point="image2ansi_main",
+    ),
+    ToolSpec(
+        "image2braille",
+        "sumdoc.tools.imagetext",
+        "Render images as Unicode Braille, optionally with ANSI color.",
+        entry_point="image2braille_main",
+    ),
+    ToolSpec(
         "png2webp",
         "sumdoc.tools.imageconvert",
         "Convert PNG images to WebP.",
@@ -74,6 +93,20 @@ TOOLS = (
         "sumdoc.tools.png2text",
         "Extract Markdown text, code, or tables from an image using OCR.",
         aliases=("png2md", "image2md"),
+    ),
+    ToolSpec(
+        "markdown2helpdb",
+        "sumdoc.tools.helpconv",
+        "Compile editable Sum help Markdown to versioned .helpdb JSON.",
+        aliases=("md2helpdb",),
+        entry_point="markdown2helpdb_main",
+    ),
+    ToolSpec(
+        "helpdb2markdown",
+        "sumdoc.tools.helpconv",
+        "Reconstruct editable Markdown from a versioned .helpdb file.",
+        aliases=("helpdb2md",),
+        entry_point="helpdb2markdown_main",
     ),
     ToolSpec(
         "md2html",
