@@ -1,4 +1,0 @@
-[console_scripts]
-helpdb2markdown = sumdoc.tools.helpconv:helpdb2markdown_entry_point
-markdown2helpdb = sumdoc.tools.helpconv:markdown2helpdb_entry_point
-sumdoc = sumdoc.cli:entry_point
