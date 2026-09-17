@@ -194,14 +194,18 @@ class HelpCorpus:
         def clean_paragraph(values):
             return " ".join(line.strip() for line in values if line.strip()).strip();
 
-        def clean_list(values):
+        def clean_list(values,split_commas=True):
             result = [];
             for line in values:
                 value = line.strip();
                 if value.startswith("- ") or value.startswith("* "):
                     value = value[2:].strip();
-                if value:
+                if not value:
+                    continue;
+                if split_commas:
                     result.extend([item.strip() for item in value.split(",") if item.strip()]);
+                else:
+                    result.append(value);
             return tuple(result);
 
         def clean_code(values):
@@ -223,7 +227,7 @@ class HelpCorpus:
             summary = clean_paragraph(topic_summary);
             syntax_values = tuple(clean_code(sections.get("syntax", [])));
             example_values = clean_code(sections.get("functional example", []));
-            notes_values = clean_list(sections.get("notes", []));
+            notes_values = clean_list(sections.get("notes", []),split_commas=False);
             see_values = clean_list(sections.get("see also", []));
             alias_values = clean_list(sections.get("aliases", []));
             topics.append(HelpTopic(topic_name, category, summary, syntax_values, "\n".join(example_values).rstrip(), notes_values, see_values, alias_values, language));

@@ -1,10 +1,14 @@
-# SumDoc 0.2.0
+# SumDoc 0.2.4
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
 A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
+
+## Help database model
+
+SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.4 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
 
 ## License
 

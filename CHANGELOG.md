@@ -1,8 +1,10 @@
-# r20 coordinated release
-
-- Aligned with SUM r20 architecture and package versions.
-
 # Changelog
+
+## 0.2.4 - 2026-09-17
+
+- Fixed Markdown help parsing so commas inside one `Notes` bullet are preserved instead of being mistaken for list separators.
+- Kept comma splitting for `See also` and `Aliases`, where comma-separated entries are intentional.
+- Aligned SumDoc with the reusable navigable-help work used by the SUM r20 shell line.
 
 ## 0.2.1 - 2026-09-01
 

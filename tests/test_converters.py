@@ -177,3 +177,34 @@ def test_help_markdown_helpdb_round_trip(tmp_path):
     ) == 0;
     reparsed = HelpCorpus.from_markdown(restored.read_text(encoding="utf-8"));
     assert reparsed.find_topic("PRINT").syntax == ("PRINT expression",);
+
+
+def test_help_notes_preserve_commas_inside_one_bullet():
+    from sumdoc.helpdb import HelpCorpus;
+    corpus=HelpCorpus.from_markdown("""# Help
+
+## Shell
+
+### CD
+
+Change directory.
+
+#### Syntax
+
+```text
+cd DIR
+```
+
+#### Notes
+
+- Without DIR, CD uses HOME.
+- Exact, logical paths stay readable.
+
+#### Functional example
+
+```text
+cd work
+```
+""");
+    topic=corpus.find_topic("CD");
+    assert topic.notes==("Without DIR, CD uses HOME.","Exact, logical paths stay readable.");
