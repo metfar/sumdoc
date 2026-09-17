@@ -81,3 +81,9 @@ def test_clipboard_compatibility_tools_are_registered():
     assert resolve_tool("clip2png").name == "clip2png";
     assert resolve_tool("clip2rtf").name == "clip2rtf";
     assert resolve_tool("clip2md").name == "clip2md";
+
+
+def test_live_help_tool_is_registered_but_not_installed_as_generic_help_link():
+    from sumdoc.registry import all_invocation_names, resolve_tool;
+    assert resolve_tool("help").name == "help";
+    assert "help" not in all_invocation_names();

@@ -1,4 +1,4 @@
-# SumDoc 0.2.5
+# SumDoc 0.2.6
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -35,7 +35,7 @@ This keeps application code small.  A terminal, editor, IDE, BASIC environment, 
 
 ## Help database model
 
-SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.5 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
+SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.6 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
 
 ## License
 
@@ -45,6 +45,7 @@ SumDoc is free software released under the GNU General Public License, version 2
 
 | Tool | Purpose | Aliases |
 |---|---|---|
+| `help` | Explore Markdown, `.helpdb`, or a Markdown directory with the SUM HelpBrowser. | — |
 | `image2text` | Render raster images as ASCII or DOS/Spectrum-style Unicode blocks. | `image2ascii` |
 | `image2ansi` | Render raster images as true-color, 256-color, or 16-color ANSI half blocks. | — |
 | `image2braille` | Render raster images as Unicode Braille, optionally with ANSI color. | — |
@@ -456,19 +457,39 @@ The parser/serializer is also available as `sumdoc.helpdb.HelpCorpus` for docume
 
 ### Markdown as live help
 
-The next step is to let the same help browser explore ordinary Markdown directly, without forcing a compile step during development.  A Markdown file, a documentation directory, and a compiled `.helpdb` should be different representations of the same logical help corpus.
+SumDoc 0.2.6 can expose ordinary Markdown directly through the reusable SUM `HelpBrowser`; no `.helpdb` compilation step is required while writing or reviewing documentation.  A Markdown file, a documentation directory, and a compiled `.helpdb` are accepted as different representations of navigable help content.
 
-The intended interface is:
+Open one Markdown document:
 
 ```sh
 sumdoc help README.md
+```
+
+Open a documentation tree recursively:
+
+```sh
 sumdoc help docs/
 sumdoc help .
 ```
 
-These `sumdoc help` forms describe the planned live-document interface; they are documented here as the architectural contract and are not yet registered tools in SumDoc 0.2.5.  Until that interface is implemented, `markdown2helpdb` plus the existing SUM `HelpBrowser` is the supported path.
+Open a compiled help database:
 
-For a directory, Markdown headings and files can form a navigable topic tree.  A project such as:
+```sh
+sumdoc help build/language.helpdb
+```
+
+Select an initial section, filter, theme, or frontend when useful:
+
+```sh
+sumdoc help README.md --topic Installation
+sumdoc help README.md --query clipboard
+sumdoc help README.md --theme DOS
+sumdoc help README.md --backend tui
+```
+
+For ordinary Markdown, level-two and deeper headings become navigable topics.  In a directory, files form categories while their headings become topics.  The original Markdown body is displayed rather than being rewritten into the specialized `Syntax`/`Notes`/`Functional example` help schema.
+
+For a directory, a project such as:
 
 ```text
 docs/
@@ -492,9 +513,9 @@ Documentation
     └── X
 ```
 
-Normal Markdown links then become help navigation: links to another `.md` file open another topic, `#anchors` move to sections, and images remain document assets that a capable frontend may render.
+This makes development help immediate: edit a Markdown file and reopen the help view to see the current source.  Distribution builds can still compile specialized help Markdown to `.helpdb` for predictable startup, compact packaging, indexing, and search.
 
-This makes development help immediate: edit a Markdown file and reopen/F1 the help view to see the current source.  Distribution builds can compile the same tree to `.helpdb` for predictable startup, compact packaging, indexing, and search.
+Markdown-link activation (`other.md`, `#anchor`) and direct application F1 wiring are natural follow-on integrations; 0.2.6 focuses on browsing/searching Markdown sections and directories through the existing HelpBrowser.
 
 ```text
                     Markdown source
@@ -521,7 +542,7 @@ application docs/*.md ─┐
 application help.helpdb ┘
 ```
 
-During development an application can point F1 at its Markdown documentation tree.  A packaged release can point F1 at the compiled `.helpdb` generated from exactly the same sources.  This avoids maintaining a README, a separate help file, and a third copy of the same explanation.
+The `sumdoc help` command now proves the live-Markdown side of this model.  Application-level F1 wiring is the next integration step: during development an application can point F1 at its Markdown documentation tree, while a packaged release can point F1 at a compiled `.helpdb` when desired.  This avoids maintaining a README, a separate help file, and a third copy of the same explanation.
 
 The long-term principle is simple: documentation should be written once and then **read, searched, published, converted, or explored as help** through SumDoc.
 

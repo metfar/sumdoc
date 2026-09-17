@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.6 - 2026-09-17
+
+- Added the `sumdoc help SOURCE` interactive document browser.
+- `sumdoc help` now opens ordinary Markdown files, compiled `.helpdb` files, and directories of Markdown documents through the reusable `sumTUI.HelpBrowser`.
+- Ordinary Markdown headings become navigable/searchable topics while retaining their original Markdown body.
+- Directory browsing recursively groups Markdown documents and their sections into one corpus.
+- Added `--topic`, `--query`, `--title`, `--theme`, and `--backend tui|gui` help-browser options.
+- Kept `help` as a `sumdoc` subcommand only, avoiding installation of a generic `help` executable/symlink.
+- Added an optional `help` dependency group for `sumTUI>=0.8.0a26`; the `all` extra includes it.
+
 ## 0.2.5 - 2026-09-17
 
 - Integrated the historical standalone `md2html` dark presentation as SumDoc's default HTML style.

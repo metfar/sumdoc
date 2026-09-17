@@ -37,6 +37,7 @@ class ToolSpec:
     description: str;
     aliases: tuple[str, ...] = ();
     entry_point: str = "main";
+    install_link: bool = True;
 
     def load(self) -> Callable[[list[str], object], int]:
         module = import_module(self.module);
@@ -44,6 +45,13 @@ class ToolSpec:
 
 
 TOOLS = (
+    ToolSpec(
+        "help",
+        "sumdoc.tools.helpview",
+        "Explore Markdown, .helpdb, or Markdown directories with the SUM HelpBrowser.",
+        entry_point="help_main",
+        install_link=False,
+    ),
     ToolSpec(
         "image2text",
         "sumdoc.tools.imagetext",
@@ -179,6 +187,8 @@ def resolve_tool(name: str | None) -> ToolSpec | None:
 def all_invocation_names() -> tuple[str, ...]:
     names = [];
     for tool in TOOLS:
+        if not tool.install_link:
+            continue;
         names.append(tool.name);
         names.extend(tool.aliases);
     return (tuple(names));
