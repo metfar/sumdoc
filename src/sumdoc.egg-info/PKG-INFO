@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sumdoc
-Version: 0.2.4
+Version: 0.2.5
 Summary: Small Unix-style document conversion tools in one multicall command.
 Author-email: William Martinez Bas <metfar@gmail.com>
 License-Expression: GPL-2.0-or-later
@@ -46,17 +46,44 @@ Requires-Dist: build>=1.2; extra == "dev"
 Requires-Dist: pytest>=8; extra == "dev"
 Dynamic: license-file
 
-# SumDoc 0.2.4
+# SumDoc 0.2.5
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
-A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
+A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
+## Role inside SUM
+
+SumDoc is the document/content layer that sits above the individual SUM applications.  Its job is to understand content, convert it between useful representations, build searchable help material, and provide one reusable document model to the rest of the ecosystem.
+
+The operating-system transport and the visual presentation remain separate concerns: `sumGUI` owns native clipboard/session integration, while `sumTUI` and `sumGUI` provide viewers such as the reusable `HelpBrowser`.  SumDoc owns what the content *means* and how it can be transformed.
+
+```text
+                         sumDOC
+                document/content layer
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+      import            transform          explore
+        │                  │                  │
+ Markdown / HTML      HTML / PDF / DOCX    HelpBrowser
+ RTF / images         Markdown / helpdb     search/index
+ clipboard content         │                  │
+        │                  └────────┬─────────┘
+        └───────────────────────────┘
+                           │
+                    SUM applications
+```
+
+Markdown is the preferred editable interchange format for textual documentation.  Rich clipboard formats such as HTML or RTF can be normalized to Markdown; Markdown can then be published as styled HTML, exported to other document formats, or compiled to `.helpdb` for fast runtime help.  Images remain binary assets and can be referenced from Markdown when a document-oriented application pastes them.
+
+This keeps application code small.  A terminal, editor, IDE, BASIC environment, or future SUM application should not need its own RTF parser, Markdown converter, clipboard-type policy, or help compiler.
+
 ## Help database model
 
-SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.4 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
+SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.5 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
 
 ## License
 
@@ -74,6 +101,13 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `pdf2png` | Render PDF pages as 300 or 600 DPI PNG files. | — |
 | `pdf2txt` | Extract text, HTML, XML, or tagged data from PDF files. | `pdf2text` |
 | `png2text` | Extract Markdown text, code, or tables from images using OCR. | `png2md`, `image2md` |
+| `markdown2helpdb` | Compile editable Markdown into a versioned SUM help database. | `md2helpdb` |
+| `helpdb2markdown` | Reconstruct editable Markdown from a SUM help database. | `helpdb2md` |
+| `clipinfo` | Show the active clipboard backend and advertised MIME/TARGET formats. | `clipboard-info` |
+| `clipbesttype` | Select the richest compatible clipboard representation. | `clipboard-best` |
+| `clip2md` | Convert Markdown, HTML, RTF, or plain clipboard text to Markdown. | `clipboard2md` |
+| `clip2png` | Save clipboard image data as PNG. | `clipboard2png` |
+| `clip2rtf` | Compatibility saver for RTF/HTML/Markdown/plain clipboard content. | `clipboard-save` |
 | `md2html` | Convert Markdown or preformatted terminal text to HTML. | `markdown2html` |
 | `html2md` | Convert HTML to Markdown. | `html2markdown` |
 | `md2pdf` | Convert Markdown or preformatted terminal text to PDF. | `md2pdfpipe`, `markdown2pdf` |
@@ -333,6 +367,58 @@ md2html notes.md -o notes.html
 html2md notes.html -o notes.md
 ```
 
+`md2html` uses the historical SUM dark presentation by default: a near-black background, light monospaced text, cyan headings, and dark tables. This is the presentation used by the older standalone `md2html` script and is particularly useful for browser/LMS posting. Use `--style light` when a neutral light page is preferred, or `--css FILE` for a custom stylesheet. Generated tables also keep a classic `border="1"` fallback so borders remain visible in restrictive HTML editors that remove embedded CSS; disable it with `--no-table-border-fallback`.
+
+### University / LMS workflow
+
+A practical reason for keeping the historical dark HTML profile is academic posting.  A paper can stay in Markdown while it is being written and reviewed, then be rendered to a complete HTML document for browser inspection or copying into an LMS/editor:
+
+```sh
+md2html discussion-assignment.md -o discussion-assignment.html
+```
+
+The same conversion works in a pipeline:
+
+```sh
+cat discussion-assignment.md | md2html > discussion-assignment.html
+```
+
+Use the light profile when the destination expects a conventional printable page:
+
+```sh
+md2html discussion-assignment.md --style light -o discussion-assignment-light.html
+```
+
+The important workflow is that Markdown remains the maintained source.  HTML is a publication artifact and can be regenerated whenever the Markdown changes.
+
+### Clipboard integration
+
+SumDoc now owns the reusable Linux clipboard discovery used by the old standalone `clipinfo`, `clipbesttype`, `clip2png`, and `clip2rtf` scripts. Backend selection follows the active graphical session instead of blindly probing Wayland: a valid `WAYLAND_DISPLAY` socket selects `wl-paste`; otherwise a defined `DISPLAY` selects X11 through `xclip` (with `xsel` as a plain-text fallback). This avoids noisy Wayland connection failures on X11 desktops.
+
+Inspect the current clipboard and choose the richest representation:
+
+```sh
+clipinfo
+clipbesttype --kind text
+```
+
+Convert rich clipboard content to Markdown. Native Markdown is retained, HTML is converted with SumDoc's HTML importer, and RTF uses `pandoc` or `unrtf` when available to preserve formatting such as emphasis and lists, with a plain-text fallback when neither converter exists:
+
+```sh
+clip2md -o pasted.md
+```
+
+Clipboard images can be saved as PNG, while the historical RTF-oriented saver remains available during script migration:
+
+```sh
+clip2png screenshot.png
+clip2rtf clipboard.rtf
+clip2rtf clipboard.html
+clip2rtf clipboard.md
+```
+
+These compatibility names are multicall SumDoc tools, so the old standalone scripts can be retired after the SumDoc links are installed.
+
 ### Line breaks and terminal output
 
 Markdown treats a single newline inside a paragraph as a soft line break. Browsers normally display that break as ordinary whitespace. Preserve each source newline while retaining Markdown parsing with:
@@ -389,14 +475,16 @@ A tool becomes more valuable when other people can study it, modify it, and pass
 
 ## Sum help documents
 
-SumDoc owns the conversion format used by Sum ecosystem help. The editable source is Markdown; `.helpdb` is a versioned UTF-8 JSON cache/interchange file that can always be regenerated.
+SumDoc owns the conversion format used by SUM help.  The editable source is Markdown; `.helpdb` is a versioned UTF-8 JSON cache/interchange representation that can always be regenerated.  The distinction is deliberate: **Markdown is the source; `.helpdb` is a compiled artifact.**
+
+Compile help for distribution or fast runtime loading:
 
 ```sh
 markdown2helpdb help.md
 helpdb2markdown help.helpdb
 ```
 
-The same tools are available through the multicall command and aliases:
+The same operations are available through the multicall command and aliases:
 
 ```sh
 sumdoc markdown2helpdb help.md
@@ -413,5 +501,76 @@ markdown2helpdb help.md -o build/language.helpdb
 ```
 
 The parser/serializer is also available as `sumdoc.helpdb.HelpCorpus` for documentation/build tooling. Runtime UIs do not need SumDoc merely to display an already compiled help database.
+
+### Markdown as live help
+
+The next step is to let the same help browser explore ordinary Markdown directly, without forcing a compile step during development.  A Markdown file, a documentation directory, and a compiled `.helpdb` should be different representations of the same logical help corpus.
+
+The intended interface is:
+
+```sh
+sumdoc help README.md
+sumdoc help docs/
+sumdoc help .
+```
+
+These `sumdoc help` forms describe the planned live-document interface; they are documented here as the architectural contract and are not yet registered tools in SumDoc 0.2.5.  Until that interface is implemented, `markdown2helpdb` plus the existing SUM `HelpBrowser` is the supported path.
+
+For a directory, Markdown headings and files can form a navigable topic tree.  A project such as:
+
+```text
+docs/
+├── architecture.md
+├── filesystem.md
+├── terminal.md
+└── languages/
+    ├── basic.md
+    └── x.md
+```
+
+can naturally become:
+
+```text
+Documentation
+├── Architecture
+├── Filesystem
+├── Terminal
+└── Languages
+    ├── BASIC
+    └── X
+```
+
+Normal Markdown links then become help navigation: links to another `.md` file open another topic, `#anchors` move to sections, and images remain document assets that a capable frontend may render.
+
+This makes development help immediate: edit a Markdown file and reopen/F1 the help view to see the current source.  Distribution builds can compile the same tree to `.helpdb` for predictable startup, compact packaging, indexing, and search.
+
+```text
+                    Markdown source
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+       live exploration             compile
+             │                         │
+             │                      .helpdb
+             │                         │
+             └────────────┬────────────┘
+                          │
+                     HelpBrowser
+                    sumTUI / sumGUI
+```
+
+### Application help / F1
+
+Applications should be able to provide either editable documentation or a compiled corpus:
+
+```text
+application docs/*.md ─┐
+                       ├─> SumDoc help model ─> HelpBrowser
+application help.helpdb ┘
+```
+
+During development an application can point F1 at its Markdown documentation tree.  A packaged release can point F1 at the compiled `.helpdb` generated from exactly the same sources.  This avoids maintaining a README, a separate help file, and a third copy of the same explanation.
+
+The long-term principle is simple: documentation should be written once and then **read, searched, published, converted, or explored as help** through SumDoc.
 
 <p align=center><b>- oOo -<b></p>

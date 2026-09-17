@@ -27,7 +27,7 @@ import argparse;
 from pathlib import Path;
 
 from sumdoc.common import GlobalOptions, Reporter, read_text_input, resolve_single_output, write_binary_output;
-from sumdoc.tools.md2html import DEFAULT_CSS, build_document;
+from sumdoc.tools.md2html import LIGHT_CSS, build_document;
 
 
 def import_weasyprint():
@@ -70,7 +70,7 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
     reporter = Reporter(options);
     markdown_text, input_path = read_text_input(args.input, args.encoding);
     title = args.title or (input_path.stem if input_path is not None else args.name or "Document");
-    css_text = DEFAULT_CSS;
+    css_text = LIGHT_CSS;
     if args.css:
         css_text = Path(args.css).expanduser().resolve().read_text(encoding=args.encoding);
     html_text = build_document(

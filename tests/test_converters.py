@@ -208,3 +208,37 @@ cd work
 """);
     topic=corpus.find_topic("CD");
     assert topic.notes==("Without DIR, CD uses HOME.","Exact, logical paths stay readable.");
+
+
+def test_md2html_default_style_preserves_historical_sum_dark_theme():
+    html = md2html.build_document(
+        "# Trabajo\n",
+        "Trabajo",
+        md2html.DEFAULT_CSS,
+    );
+    assert "--bg: #0b0d10" in html;
+    assert "--accent: #1ec8ff" in html;
+    assert 'data-color-mode="dark"' in html;
+
+
+def test_md2html_tables_keep_lms_border_fallback():
+    html = md2html.build_document(
+        "| A | B |\n|---|---|\n| 1 | 2 |\n",
+        "Tabla",
+        md2html.DEFAULT_CSS,
+    );
+    assert '<table border="1">' in html;
+
+
+def test_md2html_can_select_light_style_from_cli(tmp_path):
+    source = tmp_path / "sample.md";
+    target = tmp_path / "sample.html";
+    source.write_text("# Light\n", encoding="utf-8");
+    result = md2html.main(
+        [str(source), "--style", "light"],
+        GlobalOptions(output=str(target)),
+    );
+    assert result == 0;
+    text = target.read_text(encoding="utf-8");
+    assert "background: #f4f4f4" in text;
+    assert "--bg: #0b0d10" not in text;

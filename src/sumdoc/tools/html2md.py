@@ -36,6 +36,18 @@ def import_markdownify():
     return (markdownify);
 
 
+def html_to_markdown(html_text: str, heading_style: str = "ATX", bullets: str = "*+-",
+                     strip: list[str] | None = None) -> str:
+    """Convert an HTML string to Markdown for reuse by clipboard/document importers.""";
+    markdownify = import_markdownify();
+    return (markdownify.markdownify(
+        html_text,
+        heading_style=heading_style,
+        bullets=bullets,
+        strip=strip,
+    ));
+
+
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="html2md", description="Convert HTML to Markdown.");
     parser.add_argument("input", nargs="?", default="-", help="HTML input file, or - for stdin. Default: stdin.");
@@ -56,8 +68,7 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
     args = create_parser().parse_args(arguments);
     reporter = Reporter(options);
     html_text, input_path = read_text_input(args.input, args.encoding);
-    markdownify = import_markdownify();
-    markdown_text = markdownify.markdownify(
+    markdown_text = html_to_markdown(
         html_text,
         heading_style=args.heading_style,
         bullets=args.bullets,

@@ -72,3 +72,12 @@ def test_help_conversion_tools_are_registered():
     assert resolve_tool("md2helpdb").name == "markdown2helpdb";
     assert resolve_tool("helpdb2markdown").name == "helpdb2markdown";
     assert resolve_tool("helpdb2md").name == "helpdb2markdown";
+
+
+def test_clipboard_compatibility_tools_are_registered():
+    from sumdoc.registry import resolve_tool;
+    assert resolve_tool("clipinfo").name == "clipinfo";
+    assert resolve_tool("clipbesttype").name == "clipbesttype";
+    assert resolve_tool("clip2png").name == "clip2png";
+    assert resolve_tool("clip2rtf").name == "clip2rtf";
+    assert resolve_tool("clip2md").name == "clip2md";

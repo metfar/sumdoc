@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.5 - 2026-09-17
+
+- Integrated the historical standalone `md2html` dark presentation as SumDoc's default HTML style.
+- Added `--style dark|light` / `--theme` while retaining `--css` for arbitrary embedded stylesheets.
+- Preserved the classic `border="1"` table fallback for LMS/editor compatibility, with `--no-table-border-fallback` to disable it.
+- Kept `md2pdf` on the light print-oriented stylesheet so HTML styling does not make PDFs dark by default.
+- Moved the reusable parts of `clipinfo`, `clipbesttype`, `clip2png`, and `clip2rtf` into SumDoc clipboard services and multicall tools.
+- Added environment-aware clipboard backend selection: Wayland is used only with a live Wayland socket; otherwise X11 uses `xclip`, with `xsel` as a plain-text fallback.
+- Added `clip2md`, including HTML → Markdown and RTF → Markdown conversion; RTF prefers `pandoc`, then `unrtf`, then a plain-text fallback.
+
 ## 0.2.4 - 2026-09-17
 
 - Fixed Markdown help parsing so commas inside one `Notes` bullet are preserved instead of being mistaken for list separators.
