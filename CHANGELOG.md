@@ -1,3 +1,8 @@
+## 0.2.9 - 2026-09-18
+
+- Paste Special image-to-text now produces color-independent ASCII art using a luminance character ramp instead of Unicode block cells whose shape depended on foreground/background colors.
+- The optional OCR overlay remains available on top of the ASCII representation.
+
 # SumDoc changelog
 
 ## 0.2.8 - 2026-09-18

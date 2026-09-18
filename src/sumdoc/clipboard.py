@@ -364,26 +364,27 @@ def image_to_ocr_text(content: ClipboardContent) -> str:
 
 
 def image_to_ascii_text(content: ClipboardContent, width: int = 72, with_ocr: bool = False) -> str:
-    """Render a clipboard image as DOS/Spectrum-style Unicode blocks, optionally overlaying OCR words.""";
+    """Render a clipboard image as color-independent ASCII art, optionally overlaying OCR words.""";
     image = _image_from_content(content);
-    from PIL import ImageEnhance, ImageFilter, ImageOps;
+    from PIL import ImageOps;
     raw = ImageOps.autocontrast(image.convert("RGB"));
     original_width, original_height = raw.size;
     target_width = max(8, int(width));
     target_height = max(1, int((original_height / max(1, original_width)) * target_width * 0.45));
-    gray = ImageOps.invert(raw.convert("L")).filter(ImageFilter.MaxFilter(3));
-    gray = ImageEnhance.Contrast(gray).enhance(2.0).resize((target_width, target_height));
+    source_gray = raw.convert("L");
+    histogram = source_gray.histogram();
+    background = max(range(256), key=lambda value: histogram[value]);
+    gray = source_gray.resize((target_width, target_height));
     pixels = gray.load();
+    characters = " .:-=+*#%@";
+    maximum_difference = max(1, background, 255 - background);
     grid = [[" " for _ in range(target_width)] for _ in range(target_height)];
     for y in range(target_height):
         for x in range(target_width):
-            value = pixels[x, y];
-            if value > 160:
-                grid[y][x] = "█";
-            elif value > 80:
-                grid[y][x] = "▓";
-            elif value > 30:
-                grid[y][x] = "░";
+            value = int(pixels[x, y]);
+            strength = min(1.0, abs(value - background) / maximum_difference);
+            index = min(len(characters) - 1, int(round(strength * (len(characters) - 1))));
+            grid[y][x] = characters[index];
     if with_ocr:
         try:
             import pytesseract;
@@ -453,9 +454,9 @@ def special_paste_options(backend: ClipboardBackend | None = None) -> list[tuple
         if has_ocr:
             result.append(("ocr", "As OCR text"));
         if has_pillow:
-            result.append(("ascii", "As ASCII/Unicode art"));
+            result.append(("ascii", "As ASCII art"));
             if has_ocr:
-                result.append(("ascii-ocr", "As ASCII/Unicode art + OCR"));
+                result.append(("ascii-ocr", "As ASCII art + OCR"));
             result.append(("placeholder", "As image placeholder"));
     return (result);
 

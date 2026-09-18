@@ -1,4 +1,4 @@
-# SumDoc 0.2.8
+# SumDoc 0.2.9
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -6,7 +6,7 @@ A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
-## Clipboard behaviour in 0.2.8
+## Clipboard behaviour in 0.2.9
 
 Clipboard MIME discovery now has a bounded timeout and **Paste Special** builds its menu from advertised formats without reading rich payloads first.  This keeps right-click menus responsive on X11 while preserving Markdown/HTML/RTF/image conversion when the user actually selects an operation.
 
@@ -554,7 +554,9 @@ The long-term principle is simple: documentation should be written once and then
 
 ## Paste Special representations
 
-SumDoc also acts as the representation layer behind SUM editors. Ordinary Paste remains plain text; **Paste Special** can deliberately reinterpret richer clipboard content. Depending on the MIME types actually advertised, editors can request Markdown converted from HTML/RTF, raw HTML or RTF source, a real image URL, a saved Markdown image asset, OCR text, ASCII/Unicode art (optionally with OCR overlaid), or a textual image placeholder.
+SumDoc also acts as the representation layer behind SUM editors. Ordinary Paste remains plain text; **Paste Special** can deliberately reinterpret richer clipboard content. Depending on the MIME types actually advertised, editors can request Markdown converted from HTML/RTF, raw HTML or RTF source, a real image URL, a saved Markdown image asset, OCR text, ASCII art (optionally with OCR overlaid), or a textual image placeholder.
 
 The distinction is intentional: a browser selection can be pasted normally as text, as HTML source, or converted to Markdown without changing what `Ctrl+V` means. Bitmap-only images never receive an invented URL.
+
+For **Paste Special → ASCII art**, SumDoc uses ordinary printable ASCII (` .:-=+*#%@`) and measures contrast relative to the image's dominant background. The result therefore survives copying into plain-text files and terminals without relying on foreground/background colors or Unicode block cells. **ASCII art + OCR** overlays recognized words on the same color-independent representation.
 

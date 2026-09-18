@@ -84,3 +84,17 @@ def test_special_paste_options_expose_rich_text_and_images(monkeypatch):
     assert "ocr" in options;
     assert "ascii-ocr" in options;
     assert "placeholder" in options;
+
+
+def test_image_to_ascii_text_is_plain_ascii_not_block_graphics():
+    from io import BytesIO;
+    from PIL import Image;
+    import sumdoc.clipboard as clip;
+    image=Image.new("L",(4,2),255);
+    image.putpixel((0,0),0); image.putpixel((1,0),64); image.putpixel((2,0),128); image.putpixel((3,0),192);
+    stream=BytesIO(); image.convert("RGB").save(stream,"PNG");
+    content=ClipboardContent("image/png",stream.getvalue(),ClipboardBackend("x11","xclip"));
+    text=clip.image_to_ascii_text(content,width=8,with_ocr=False);
+    assert text.strip();
+    assert not any(char in text for char in "█▓░▀▄▌▐");
+    assert set(text)-set("@%#*+=-:. \n") == set();
