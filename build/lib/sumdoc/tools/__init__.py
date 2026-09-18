@@ -23,6 +23,4 @@
 #import warnings;
 #warnings.filterwarnings("ignore", category=UserWarning);
 
-"""SumDoc: small Unix-style document conversion tools.""";
-
-__version__ = "0.2.8";
+"""SumDoc conversion tools.""";

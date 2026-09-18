@@ -1,10 +1,14 @@
-# SumDoc 0.2.7
+# SumDoc 0.2.8
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
 A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
+
+## Clipboard behaviour in 0.2.8
+
+Clipboard MIME discovery now has a bounded timeout and **Paste Special** builds its menu from advertised formats without reading rich payloads first.  This keeps right-click menus responsive on X11 while preserving Markdown/HTML/RTF/image conversion when the user actually selects an operation.
 
 ## Role inside SUM
 

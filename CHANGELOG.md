@@ -1,4 +1,9 @@
-# Changelog
+# SumDoc changelog
+
+## 0.2.8 - 2026-09-18
+
+- Bound clipboard subprocess reads so X11 owners cannot stall context-menu creation indefinitely.
+- Build Paste Special choices from advertised MIME/TARGET types without eagerly reading HTML, RTF, URI or image payloads.
 
 ## 0.2.7 - 2026-09-17
 

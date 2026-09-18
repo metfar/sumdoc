@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sumdoc
-Version: 0.2.7
+Version: 0.2.8
 Summary: Small Unix-style document conversion tools in one multicall command.
 Author-email: William Martinez Bas <metfar@gmail.com>
 License-Expression: GPL-2.0-or-later
@@ -21,7 +21,7 @@ License-File: COPYING
 Requires-Dist: Markdown>=3.5
 Requires-Dist: markdownify>=0.11
 Provides-Extra: help
-Requires-Dist: sumtui>=0.8.0a28; extra == "help"
+Requires-Dist: sumtui>=0.8.0a29; extra == "help"
 Provides-Extra: image
 Requires-Dist: Pillow>=10; extra == "image"
 Provides-Extra: pdf
@@ -35,7 +35,7 @@ Requires-Dist: pytesseract>=0.3.10; extra == "ocr"
 Requires-Dist: img2table>=1.2; extra == "ocr"
 Requires-Dist: tabulate>=0.9; extra == "ocr"
 Provides-Extra: all
-Requires-Dist: sumtui>=0.8.0a28; extra == "all"
+Requires-Dist: sumtui>=0.8.0a29; extra == "all"
 Requires-Dist: Pillow>=10; extra == "all"
 Requires-Dist: PyMuPDF>=1.22; extra == "all"
 Requires-Dist: pdfminer.six>=20221105; extra == "all"
@@ -49,13 +49,17 @@ Requires-Dist: build>=1.2; extra == "dev"
 Requires-Dist: pytest>=8; extra == "dev"
 Dynamic: license-file
 
-# SumDoc 0.2.7
+# SumDoc 0.2.8
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
 A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
+
+## Clipboard behaviour in 0.2.8
+
+Clipboard MIME discovery now has a bounded timeout and **Paste Special** builds its menu from advertised formats without reading rich payloads first.  This keeps right-click menus responsive on X11 while preserving Markdown/HTML/RTF/image conversion when the user actually selects an operation.
 
 ## Role inside SUM
 

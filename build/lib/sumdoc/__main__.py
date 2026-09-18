@@ -23,6 +23,6 @@
 #import warnings;
 #warnings.filterwarnings("ignore", category=UserWarning);
 
-"""SumDoc: small Unix-style document conversion tools.""";
+from sumdoc.cli import entry_point;
 
-__version__ = "0.2.8";
+raise SystemExit(entry_point());

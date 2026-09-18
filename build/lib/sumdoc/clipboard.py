@@ -111,14 +111,13 @@ def detect_backend(env: Mapping[str, str] | None = None,
     return (None);
 
 
-def _run(command: Sequence[str], input_bytes: bytes | None = None, timeout: float = 1.5) -> bytes:
+def _run(command: Sequence[str], input_bytes: bytes | None = None) -> bytes:
     result = subprocess.run(
         list(command),
         input=input_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         check=True,
-        timeout=max(0.1, float(timeout)),
     );
     return (result.stdout);
 
@@ -441,14 +440,13 @@ def special_paste_options(backend: ClipboardBackend | None = None) -> list[tuple
         result.append(("html", "As HTML source"));
     if "text/rtf" in index or "application/rtf" in index:
         result.append(("rtf", "As RTF source"));
-    has_uri = any(normalize_type(value) in index for value in URI_TYPES);
-    has_html = "text/html" in index;
-    if has_uri or has_html:
+    if clipboard_url(selected):
         result.append(("url", "As URL / filename"));
     if choose_best_type(types, "image") is not None:
         has_pillow = importlib.util.find_spec("PIL") is not None;
         has_ocr = has_pillow and importlib.util.find_spec("pytesseract") is not None;
-        if has_uri or has_html or has_pillow:
+        source = clipboard_url(selected);
+        if source or has_pillow:
             result.append(("markdown-image", "As Markdown image"));
         if has_ocr:
             result.append(("ocr", "As OCR text"));
