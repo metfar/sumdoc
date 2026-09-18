@@ -13,6 +13,7 @@ src/sumdoc/cli.py
 src/sumdoc/clipboard.py
 src/sumdoc/common.py
 src/sumdoc/helpdb.py
+src/sumdoc/helpview.py
 src/sumdoc/registry.py
 src/sumdoc.egg-info/PKG-INFO
 src/sumdoc.egg-info/SOURCES.txt
@@ -25,6 +26,7 @@ src/sumdoc/styles/default.css
 src/sumdoc/tools/__init__.py
 src/sumdoc/tools/clipboard_tools.py
 src/sumdoc/tools/helpconv.py
+src/sumdoc/tools/helpview.py
 src/sumdoc/tools/html2md.py
 src/sumdoc/tools/imageconvert.py
 src/sumdoc/tools/imagetext.py
@@ -36,5 +38,6 @@ src/sumdoc/tools/png2text.py
 tests/test_cli.py
 tests/test_clipboard.py
 tests/test_converters.py
+tests/test_helpview.py
 tests/test_imagetext.py
 tests/test_multicall.py

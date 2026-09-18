@@ -67,3 +67,20 @@ def test_html_clipboard_converts_to_markdown():
     markdown = content_to_markdown(content);
     assert "**Hello**" in markdown;
     assert "*world*" in markdown;
+
+
+def test_special_paste_options_expose_rich_text_and_images(monkeypatch):
+    import sumdoc.clipboard as clip;
+    backend=ClipboardBackend("x11","xclip");
+    monkeypatch.setattr(clip,"detect_backend",lambda:backend);
+    monkeypatch.setattr(clip,"available_types",lambda _backend=None:["text/plain","text/html","text/rtf","image/png"]);
+    monkeypatch.setattr(clip,"clipboard_url",lambda _backend=None:None);
+    options=dict(clip.special_paste_options());
+    assert "plain" in options;
+    assert "markdown" in options;
+    assert "html" in options;
+    assert "rtf" in options;
+    assert "markdown-image" in options;
+    assert "ocr" in options;
+    assert "ascii-ocr" in options;
+    assert "placeholder" in options;

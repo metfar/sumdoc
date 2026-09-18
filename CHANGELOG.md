@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.6 - 2026-09-17
+## 0.2.7 - 2026-09-17
 
 - Added the `sumdoc help SOURCE` interactive document browser.
 - `sumdoc help` now opens ordinary Markdown files, compiled `.helpdb` files, and directories of Markdown documents through the reusable `sumTUI.HelpBrowser`.

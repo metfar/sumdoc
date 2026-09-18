@@ -24,6 +24,10 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 from dataclasses import dataclass;
+from datetime import datetime;
+from html.parser import HTMLParser;
+from io import BytesIO;
+import importlib.util;
 import os;
 from pathlib import Path;
 import re;
@@ -32,6 +36,10 @@ import subprocess;
 import tempfile;
 from typing import Callable, Mapping, Sequence;
 
+
+URI_TYPES = (
+    "text/uri-list",
+);
 
 IMAGE_TYPES = (
     "image/png",
@@ -54,7 +62,7 @@ DOCUMENT_TEXT_TYPES = (
     "string",
 );
 
-GENERAL_PRIORITY = IMAGE_TYPES + DOCUMENT_TEXT_TYPES;
+GENERAL_PRIORITY = IMAGE_TYPES + URI_TYPES + DOCUMENT_TEXT_TYPES;
 TEXT_PRIORITY = DOCUMENT_TEXT_TYPES;
 DOCUMENT_PRIORITY = DOCUMENT_TEXT_TYPES;
 
@@ -275,3 +283,231 @@ def content_to_markdown(content: ClipboardContent) -> str:
     if mime_type.startswith("text/plain") or mime_type in ("utf8_string", "string"):
         return (decode_text(content.data));
     raise ValueError(f"Clipboard type '{content.mime_type}' cannot be converted to Markdown text.");
+
+
+class _FirstImageSourceParser(HTMLParser):
+    def __init__(self):
+        super().__init__();
+        self.src = None;
+
+    def handle_starttag(self, tag, attrs):
+        if self.src is not None or str(tag).lower() != "img":
+            return;
+        values = dict(attrs);
+        value = values.get("src");
+        if value:
+            self.src = str(value);
+
+
+def clipboard_url(backend: ClipboardBackend | None = None) -> str | None:
+    """Return a URL/filename advertised by the clipboard when one really exists.""";
+    selected = backend or detect_backend();
+    if selected is None:
+        return (None);
+    types = available_types(selected);
+    index = _type_index(types);
+    for preferred in URI_TYPES:
+        key = normalize_type(preferred);
+        if key in index:
+            text = decode_text(read_type(index[key], selected).data);
+            for line in text.splitlines():
+                value = line.strip();
+                if value and not value.startswith("#"):
+                    return (value);
+    html_type = index.get("text/html");
+    if html_type:
+        parser = _FirstImageSourceParser();
+        try:
+            parser.feed(decode_text(read_type(html_type, selected).data));
+        except Exception:
+            return (None);
+        return (parser.src);
+    return (None);
+
+
+def _image_from_content(content: ClipboardContent):
+    try:
+        from PIL import Image;
+    except ImportError as error:
+        raise ImportError("Pillow is required for clipboard image conversion.") from error;
+    return (Image.open(BytesIO(content.data)).convert("RGB"));
+
+
+def clipboard_image_content(backend: ClipboardBackend | None = None) -> ClipboardContent | None:
+    return (read_best("image", backend));
+
+
+def image_placeholder(content: ClipboardContent) -> str:
+    """Describe a clipboard image without inventing a source URL or filename.""";
+    image = _image_from_content(content);
+    width, height = image.size;
+    mime = normalize_type(content.mime_type);
+    label = mime.split("/", 1)[-1].upper() if "/" in mime else mime.upper();
+    name = clipboard_url(content.backend) or "clipboard image";
+    return ("┌─ Image ──────────────────────────────┐\n"
+            "│ {name}\n"
+            "│ {width} × {height} · {kind}\n"
+            "└──────────────────────────────────────┘".format(
+                name=name, width=width, height=height, kind=label));
+
+
+def image_to_ocr_text(content: ClipboardContent) -> str:
+    """Extract OCR text from a clipboard image when pytesseract is available.""";
+    try:
+        import pytesseract;
+    except ImportError as error:
+        raise ImportError("pytesseract is required for Paste Special → OCR text.") from error;
+    image = _image_from_content(content);
+    text = pytesseract.image_to_string(image);
+    return (str(text).rstrip() + ("\n" if str(text).strip() else ""));
+
+
+def image_to_ascii_text(content: ClipboardContent, width: int = 72, with_ocr: bool = False) -> str:
+    """Render a clipboard image as DOS/Spectrum-style Unicode blocks, optionally overlaying OCR words.""";
+    image = _image_from_content(content);
+    from PIL import ImageEnhance, ImageFilter, ImageOps;
+    raw = ImageOps.autocontrast(image.convert("RGB"));
+    original_width, original_height = raw.size;
+    target_width = max(8, int(width));
+    target_height = max(1, int((original_height / max(1, original_width)) * target_width * 0.45));
+    gray = ImageOps.invert(raw.convert("L")).filter(ImageFilter.MaxFilter(3));
+    gray = ImageEnhance.Contrast(gray).enhance(2.0).resize((target_width, target_height));
+    pixels = gray.load();
+    grid = [[" " for _ in range(target_width)] for _ in range(target_height)];
+    for y in range(target_height):
+        for x in range(target_width):
+            value = pixels[x, y];
+            if value > 160:
+                grid[y][x] = "█";
+            elif value > 80:
+                grid[y][x] = "▓";
+            elif value > 30:
+                grid[y][x] = "░";
+    if with_ocr:
+        try:
+            import pytesseract;
+            data = pytesseract.image_to_data(raw, config="--psm 11", output_type=pytesseract.Output.DICT);
+            for index, text in enumerate(data.get("text", [])):
+                word = str(text).strip();
+                try:
+                    confidence = float(data.get("conf", [0])[index]);
+                except (ValueError, TypeError, IndexError):
+                    confidence = 0;
+                if not word or confidence <= 35:
+                    continue;
+                gx = int((data["left"][index] / original_width) * target_width);
+                gy = int(((data["top"][index] + data["height"][index] / 2) / original_height) * target_height);
+                if not (0 <= gy < target_height):
+                    continue;
+                for dx in range(-1, len(word) + 1):
+                    if 0 <= gx + dx < target_width:
+                        grid[gy][gx + dx] = " ";
+                for offset, char in enumerate(word):
+                    if 0 <= gx + offset < target_width:
+                        grid[gy][gx + offset] = char;
+        except ImportError:
+            pass;
+    return ("\n".join("".join(row).rstrip() for row in grid).rstrip() + "\n");
+
+
+def save_clipboard_image_asset(content: ClipboardContent, directory: str | Path = "images") -> Path:
+    """Save a clipboard bitmap as a portable PNG asset and return its path.""";
+    target_dir = Path(directory).expanduser();
+    target_dir.mkdir(parents=True, exist_ok=True);
+    stem = datetime.now().strftime("clipboard-%Y%m%d-%H%M%S");
+    target = target_dir / f"{stem}.png";
+    suffix = 1;
+    while target.exists():
+        target = target_dir / f"{stem}-{suffix}.png";
+        suffix += 1;
+    image = _image_from_content(content);
+    image.save(target, "PNG");
+    return (target);
+
+
+def special_paste_options(backend: ClipboardBackend | None = None) -> list[tuple[str, str]]:
+    """Return context-sensitive Paste Special choices as (id, label) pairs.""";
+    selected = backend or detect_backend();
+    if selected is None:
+        return ([]);
+    types = available_types(selected);
+    index = _type_index(types);
+    result = [];
+    if choose_best_type(types, "text") is not None:
+        result.append(("plain", "As plain text"));
+        result.append(("markdown", "As Markdown"));
+    if "text/html" in index:
+        result.append(("html", "As HTML source"));
+    if "text/rtf" in index or "application/rtf" in index:
+        result.append(("rtf", "As RTF source"));
+    if clipboard_url(selected):
+        result.append(("url", "As URL / filename"));
+    if choose_best_type(types, "image") is not None:
+        has_pillow = importlib.util.find_spec("PIL") is not None;
+        has_ocr = has_pillow and importlib.util.find_spec("pytesseract") is not None;
+        source = clipboard_url(selected);
+        if source or has_pillow:
+            result.append(("markdown-image", "As Markdown image"));
+        if has_ocr:
+            result.append(("ocr", "As OCR text"));
+        if has_pillow:
+            result.append(("ascii", "As ASCII/Unicode art"));
+            if has_ocr:
+                result.append(("ascii-ocr", "As ASCII/Unicode art + OCR"));
+            result.append(("placeholder", "As image placeholder"));
+    return (result);
+
+
+def special_paste_text(kind: str, backend: ClipboardBackend | None = None) -> str:
+    """Materialize one Paste Special representation as editor-insertable text.""";
+    selected = backend or detect_backend();
+    if selected is None:
+        raise RuntimeError("No supported clipboard backend is active.");
+    kind = str(kind).strip().lower();
+    types = available_types(selected);
+    index = _type_index(types);
+    if kind == "plain":
+        for key in ("text/plain;charset=utf-8", "utf8_string", "text/plain", "string"):
+            if key in index:
+                return (decode_text(read_type(index[key], selected).data));
+        content = read_best("text", selected);
+        if content is None:
+            raise RuntimeError("Clipboard has no textual representation.");
+        return (content_to_markdown(content));
+    if kind == "markdown":
+        content = read_best("text", selected);
+        if content is None:
+            raise RuntimeError("Clipboard has no document representation.");
+        return (content_to_markdown(content));
+    if kind == "html":
+        if "text/html" not in index:
+            raise RuntimeError("Clipboard does not advertise HTML.");
+        return (decode_text(read_type(index["text/html"], selected).data));
+    if kind == "rtf":
+        key = "text/rtf" if "text/rtf" in index else "application/rtf";
+        if key not in index:
+            raise RuntimeError("Clipboard does not advertise RTF.");
+        return (decode_text(read_type(index[key], selected).data));
+    if kind == "url":
+        value = clipboard_url(selected);
+        if not value:
+            raise RuntimeError("Clipboard does not advertise an image URL or filename.");
+        return (value);
+    content = read_best("image", selected);
+    if content is None:
+        raise RuntimeError("Clipboard has no compatible image representation.");
+    if kind == "placeholder":
+        return (image_placeholder(content));
+    if kind == "ocr":
+        return (image_to_ocr_text(content));
+    if kind == "ascii":
+        return (image_to_ascii_text(content, with_ocr=False));
+    if kind == "ascii-ocr":
+        return (image_to_ascii_text(content, with_ocr=True));
+    if kind == "markdown-image":
+        source = clipboard_url(selected);
+        if source:
+            return (f"![clipboard image]({source})");
+        path = save_clipboard_image_asset(content);
+        return (f"![clipboard image]({path.as_posix()})");
+    raise ValueError(f"Unknown Paste Special representation: {kind}.");

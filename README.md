@@ -1,4 +1,4 @@
-# SumDoc 0.2.6
+# SumDoc 0.2.7
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -35,7 +35,7 @@ This keeps application code small.  A terminal, editor, IDE, BASIC environment, 
 
 ## Help database model
 
-SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.6 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
+SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.7 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
 
 ## License
 
@@ -457,7 +457,7 @@ The parser/serializer is also available as `sumdoc.helpdb.HelpCorpus` for docume
 
 ### Markdown as live help
 
-SumDoc 0.2.6 can expose ordinary Markdown directly through the reusable SUM `HelpBrowser`; no `.helpdb` compilation step is required while writing or reviewing documentation.  A Markdown file, a documentation directory, and a compiled `.helpdb` are accepted as different representations of navigable help content.
+SumDoc 0.2.7 can expose ordinary Markdown directly through the reusable SUM `HelpBrowser`; no `.helpdb` compilation step is required while writing or reviewing documentation.  A Markdown file, a documentation directory, and a compiled `.helpdb` are accepted as different representations of navigable help content.
 
 Open one Markdown document:
 
@@ -515,7 +515,7 @@ Documentation
 
 This makes development help immediate: edit a Markdown file and reopen the help view to see the current source.  Distribution builds can still compile specialized help Markdown to `.helpdb` for predictable startup, compact packaging, indexing, and search.
 
-Markdown-link activation (`other.md`, `#anchor`) and direct application F1 wiring are natural follow-on integrations; 0.2.6 focuses on browsing/searching Markdown sections and directories through the existing HelpBrowser.
+Markdown-link activation (`other.md`, `#anchor`) and direct application F1 wiring are natural follow-on integrations; 0.2.7 focuses on browsing/searching Markdown sections and directories through the existing HelpBrowser.
 
 ```text
                     Markdown source
@@ -547,3 +547,10 @@ The `sumdoc help` command now proves the live-Markdown side of this model.  Appl
 The long-term principle is simple: documentation should be written once and then **read, searched, published, converted, or explored as help** through SumDoc.
 
 <p align=center><b>- oOo -<b></p>
+
+## Paste Special representations
+
+SumDoc also acts as the representation layer behind SUM editors. Ordinary Paste remains plain text; **Paste Special** can deliberately reinterpret richer clipboard content. Depending on the MIME types actually advertised, editors can request Markdown converted from HTML/RTF, raw HTML or RTF source, a real image URL, a saved Markdown image asset, OCR text, ASCII/Unicode art (optionally with OCR overlaid), or a textual image placeholder.
+
+The distinction is intentional: a browser selection can be pasted normally as text, as HTML source, or converted to Markdown without changing what `Ctrl+V` means. Bitmap-only images never receive an invented URL.
+
