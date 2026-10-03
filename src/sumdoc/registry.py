@@ -152,6 +152,12 @@ TOOLS = (
         entry_point="clip2rtf_main",
     ),
     ToolSpec(
+        "md2rich",
+        "sumdoc.tools.lessrich",
+        "Render Markdown as rich terminal text.",
+        aliases=("lessrich", "markdown2rich"),
+    ),
+    ToolSpec(
         "md2html",
         "sumdoc.tools.md2html",
         "Convert Markdown or terminal text to a complete HTML document.",

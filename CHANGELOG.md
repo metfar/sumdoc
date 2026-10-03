@@ -1,3 +1,10 @@
+## 0.2.10 - 2026-10-03
+
+- Integrated the historical `lessrich` Markdown console renderer as the `md2rich` SumDoc tool.
+- Added `lessrich` and `markdown2rich` aliases so the original command name remains available through SumDoc multicall links.
+- Added right/center/left Markdown table alignment, escaped-pipe handling, multiple input files, `--width`, and `--no-color`.
+- Added the optional `rich` dependency group and included it in `all`.
+
 ## 0.2.9 - 2026-09-18
 
 - Paste Special image-to-text now produces color-independent ASCII art using a luminance character ramp instead of Unicode block cells whose shape depended on foreground/background colors.

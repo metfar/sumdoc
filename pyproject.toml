@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sumdoc"
-version = "0.2.9"
+version = "0.2.10"
 description = "Small Unix-style document conversion tools in one multicall command."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -49,6 +49,9 @@ pdf = [
 markdown = [
     "WeasyPrint>=60",
 ]
+rich = [
+    "rich>=13",
+]
 ocr = [
     "opencv-python>=4.8",
     "pytesseract>=0.3.10",
@@ -61,6 +64,7 @@ all = [
     "PyMuPDF>=1.22",
     "pdfminer.six>=20221105",
     "WeasyPrint>=60",
+    "rich>=13",
     "opencv-python>=4.8",
     "pytesseract>=0.3.10",
     "img2table>=1.2",
