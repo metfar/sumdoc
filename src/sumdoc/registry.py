@@ -72,6 +72,13 @@ TOOLS = (
         entry_point="image2braille_main",
     ),
     ToolSpec(
+        "text2image",
+        "sumdoc.tools.text2image",
+        "Render text as a PNG image; useful for deliberately sharing text without copy/paste.",
+        aliases=("writeOnImage", "writeonimage"),
+        entry_point="text2image_main",
+    ),
+    ToolSpec(
         "png2webp",
         "sumdoc.tools.imageconvert",
         "Convert PNG images to WebP.",

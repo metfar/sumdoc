@@ -1,3 +1,12 @@
+## 0.2.12 - 2026-10-03
+
+- Integrated the historical `writeOnImage` utility as the canonical `text2image` SumDoc tool, preserving `writeOnImage`/`writeonimage` aliases.
+- Added stdin and clipboard input so passwords and other secrets do not need to appear in shell history or process arguments.
+- Preserved the original blue/yellow color defaults while removing the hard-coded personal font path; `--font`, `--size`, foreground/background colors, padding, and `--show` are available.
+- Output files default to mode 0600 for safer handling of generated password images; `--public` opts back into normal umask-based permissions.
+- Added compatibility for the historical `--out=` option and regression tests.
+- The test suite now contains 59 passing tests.
+
 ## 0.2.10 - 2026-10-03
 
 - Integrated the historical `lessrich` Markdown console renderer as the `md2rich` SumDoc tool.

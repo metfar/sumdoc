@@ -83,6 +83,12 @@ def test_clipboard_compatibility_tools_are_registered():
     assert resolve_tool("clip2md").name == "clip2md";
 
 
+def test_text_to_image_compatibility_tool_is_registered():
+    from sumdoc.registry import resolve_tool;
+    assert resolve_tool("text2image").name == "text2image";
+    assert resolve_tool("writeOnImage").name == "text2image";
+
+
 def test_live_help_tool_is_registered_but_not_installed_as_generic_help_link():
     from sumdoc.registry import all_invocation_names, resolve_tool;
     assert resolve_tool("help").name == "help";

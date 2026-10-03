@@ -2,7 +2,7 @@
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
-A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
+A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `text2image`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
@@ -65,6 +65,7 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `clip2md` | Convert Markdown, HTML, RTF, or plain clipboard text to Markdown. | `clipboard2md` |
 | `clip2png` | Save clipboard image data as PNG. | `clipboard2png` |
 | `clip2rtf` | Compatibility saver for RTF/HTML/Markdown/plain clipboard content. | `clipboard-save` |
+| `text2image` | Render text as PNG; stdin/clipboard input is recommended for secrets. | `writeOnImage`, `writeonimage` |
 | `md2html` | Convert Markdown or preformatted terminal text to HTML. | `markdown2html` |
 | `html2md` | Convert HTML to Markdown. | `html2markdown` |
 | `md2pdf` | Convert Markdown or preformatted terminal text to PDF. | `md2pdfpipe`, `markdown2pdf` |
@@ -348,7 +349,20 @@ md2html discussion-assignment.md --style light -o discussion-assignment-light.ht
 
 The important workflow is that Markdown remains the maintained source.  HTML is a publication artifact and can be regenerated whenever the Markdown changes.
 
-### Clipboard integration
+#
+### Render text as an image
+
+The historical `writeOnImage` helper is now the `text2image` tool. The original command name remains an alias. For passwords and other secrets, prefer stdin or the clipboard so the text is not stored in shell history or exposed as a process argument:
+
+```bash
+printf '%s' "$PASSWORD" | text2image -o password.png
+text2image --clipboard -o password.png
+writeOnImage --clipboard --out=password.png
+```
+
+By default, file output is created with mode `0600`. Use `--public` when normal umask-controlled permissions are desired. The historical blue background and yellow text remain the defaults, while `--font`, `--size`, `--foreground`, `--background`, and `--padding` make the renderer reusable.
+
+## Clipboard integration
 
 SumDoc now owns the reusable Linux clipboard discovery used by the old standalone `clipinfo`, `clipbesttype`, `clip2png`, and `clip2rtf` scripts. Backend selection follows the active graphical session instead of blindly probing Wayland: a valid `WAYLAND_DISPLAY` socket selects `wl-paste`; otherwise a defined `DISPLAY` selects X11 through `xclip` (with `xsel` as a plain-text fallback). This avoids noisy Wayland connection failures on X11 desktops.
 
