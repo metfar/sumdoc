@@ -1,3 +1,9 @@
+## 0.3.1 - 2026-10-03
+
+- Make `sumdoc banner` multiline: actual newlines and literal `\n` in command-line text start a new bitmap text row.
+- Add `--line-gap N` for optional blank terminal rows between multiline banner blocks.
+- Preserve `--gap N` as the horizontal inter-glyph gap and support custom off-pixel characters such as `--off "·"`.
+
 ## 0.3.0 - 2026-10-03
 
 - Promote WeasyPrint (`WeasyPrint>=60`) to a normal SumDoc dependency because PDF generation is now part of the baseline document toolchain rather than an optional Markdown extra.

@@ -49,3 +49,19 @@ def test_banner_uses_bitmap_rows():
 def test_missing_character_falls_back_to_question_mark():
     font = _test_font();
     assert font.glyph(0x20ac) == font.glyph(ord("?"));
+
+
+def test_banner_supports_multiple_lines():
+    text = render_banner("A\nA", _test_font(), on="#", off=".", gap=0, trim=False);
+    lines = text.splitlines();
+    assert len(lines) == 16;
+    assert lines[0] == ".##.";
+    assert lines[8] == ".##.";
+
+
+def test_banner_supports_vertical_line_gap():
+    text = render_banner("A\nA", _test_font(), on="#", off=".", gap=0, trim=False, line_gap=1);
+    lines = text.splitlines();
+    assert len(lines) == 17;
+    assert lines[8] == "";
+    assert lines[9] == ".##.";

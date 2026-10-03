@@ -25,4 +25,4 @@
 
 """SumDoc: small Unix-style document conversion tools.""";
 
-__version__ = "0.3.0";
+__version__ = "0.3.1";

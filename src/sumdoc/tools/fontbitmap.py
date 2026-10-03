@@ -227,12 +227,10 @@ def font2fnt_main(arguments: list[str] | None, options: GlobalOptions) -> int:
     return (0);
 
 
-def render_banner(text: str, font: BitmapFont, on: str = "█", off: str = " ",
-                  gap: int = 1, trim: bool = True) -> str:
-    if gap < 0:
-        raise ValueError("gap cannot be negative.");
+def _render_banner_line(text: str, font: BitmapFont, on: str, off: str,
+                        gap: int, trim: bool) -> list[str]:
     separator = off * gap;
-    lines = [];
+    rendered = [];
     glyphs = [font.glyph(ord(character)) for character in text];
     for y in range(font.height):
         pieces = [];
@@ -241,7 +239,22 @@ def render_banner(text: str, font: BitmapFont, on: str = "█", off: str = " ",
             piece = "".join(on if row & (1 << (font.width - x - 1)) else off for x in range(font.width));
             pieces.append(piece);
         line = separator.join(pieces);
-        lines.append(line.rstrip() if trim else line);
+        rendered.append(line.rstrip() if trim else line);
+    return (rendered);
+
+
+def render_banner(text: str, font: BitmapFont, on: str = "█", off: str = " ",
+                  gap: int = 1, trim: bool = True, line_gap: int = 0) -> str:
+    if gap < 0:
+        raise ValueError("gap cannot be negative.");
+    if line_gap < 0:
+        raise ValueError("line_gap cannot be negative.");
+    logical_lines = text.split("\n");
+    lines = [];
+    for index, logical_line in enumerate(logical_lines):
+        if index > 0 and line_gap:
+            lines.extend("" for _ in range(line_gap));
+        lines.extend(_render_banner_line(logical_line, font, on, off, gap, trim));
     return ("\n".join(lines) + "\n");
 
 
@@ -255,19 +268,21 @@ def banner_main(arguments: list[str] | None, options: GlobalOptions) -> int:
     parser.add_argument("--on", default="█", help="Character used for lit pixels. Default: █.");
     parser.add_argument("--off", default=" ", help="Character used for unlit pixels. Default: space.");
     parser.add_argument("--gap", type=int, default=1, help="Columns between glyphs. Default: 1.");
+    parser.add_argument("--line-gap", type=int, default=0, help="Blank terminal rows between banner text lines. Default: 0.");
     parser.add_argument("--no-trim", action="store_true", help="Keep trailing blank pixels on every row.");
     args = parser.parse_args(arguments);
     if len(args.on) != 1 or len(args.off) != 1:
         raise ValueError("--on and --off must each be exactly one character.");
     if args.text:
-        text = " ".join(args.text);
+        text = " ".join(args.text).replace("\\n", "\n");
     elif not sys.stdin.isatty():
         text = sys.stdin.read().rstrip("\n");
     else:
         raise ValueError("Provide banner text or pipe it through stdin.");
     font_path = require_input_file(args.font, (".fnt",));
     font = load_fnt(font_path);
-    result = render_banner(text, font, args.on, args.off, args.gap, trim=not args.no_trim);
+    result = render_banner(text, font, args.on, args.off, args.gap,
+                           trim=not args.no_trim, line_gap=args.line_gap);
     output_path = resolve_single_output(None, options, ".txt", name="banner");
     write_text_output(result, output_path, options);
     Reporter(options).verbose(f"Rendered with {font.width}x{font.height} SUM-FNT '{font_path.name}'.");
