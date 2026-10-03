@@ -106,3 +106,13 @@ def test_packaging_installs_all_multicall_names():
     assert set(all_invocation_names()).issubset(set(scripts));
     for name in all_invocation_names():
         assert scripts[name] == "sumdoc.cli:entry_point";
+
+
+def test_bitmap_font_tools_are_registered():
+    from sumdoc.registry import all_invocation_names, resolve_tool;
+    assert resolve_tool("font2fnt").name == "font2fnt";
+    assert resolve_tool("ttf2fnt").name == "font2fnt";
+    assert resolve_tool("banner").name == "banner";
+    assert "font2fnt" in all_invocation_names();
+    assert "ttf2fnt" in all_invocation_names();
+    assert "banner" not in all_invocation_names();

@@ -1,3 +1,12 @@
+## 0.3.0 - 2026-10-03
+
+- Promote WeasyPrint (`WeasyPrint>=60`) to a normal SumDoc dependency because PDF generation is now part of the baseline document toolchain rather than an optional Markdown extra.
+- Add `font2fnt` with `ttf2fnt` / `otf2fnt` aliases to rasterize vector fonts into the documented SUM-FNT v1 bitmap format.
+- Add `sumdoc banner` with `sumbanner` / `fontbanner` subcommand aliases for compact bitmap-font banners that no longer require the original vector font at render time.
+- Keep source TTF/OTF files external: SumDoc does not bundle personal or third-party fonts and only converts fonts explicitly supplied by the user.
+- Establish 4x8 / 256-code Latin-1 conversion as the initial practical bitmap-font profile, while leaving the SUM font/charset architecture open for the larger shared SUM charset in a later core milestone.
+- Close the 0.2.x integration cycle (help documents, clipboard utilities, rich Markdown rendering, installed multicall aliases, and secure `text2image`) and begin the 0.3 document-production milestone.
+
 ## 0.2.12 - 2026-10-03
 
 - Integrated the historical `writeOnImage` utility as the canonical `text2image` SumDoc tool, preserving `writeOnImage`/`writeonimage` aliases.
@@ -119,3 +128,4 @@
 - Added symbolic-link installation and removal commands.
 - Moved diagnostic messages to standard error for clean Unix pipelines.
 - Added optional dependency groups, tests, and GPLv2-or-later licensing.
+

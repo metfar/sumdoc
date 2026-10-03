@@ -79,6 +79,21 @@ TOOLS = (
         entry_point="text2image_main",
     ),
     ToolSpec(
+        "font2fnt",
+        "sumdoc.tools.fontbitmap",
+        "Rasterize a TTF/OTF font into the SUM-FNT bitmap format.",
+        aliases=("ttf2fnt", "otf2fnt"),
+        entry_point="font2fnt_main",
+    ),
+    ToolSpec(
+        "banner",
+        "sumdoc.tools.fontbitmap",
+        "Render compact text banners from SUM-FNT bitmap fonts.",
+        aliases=("sumbanner", "fontbanner"),
+        entry_point="banner_main",
+        install_link=False,
+    ),
+    ToolSpec(
         "png2webp",
         "sumdoc.tools.imageconvert",
         "Convert PNG images to WebP.",
