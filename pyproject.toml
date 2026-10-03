@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sumdoc"
-version = "0.2.10"
+version = "0.2.11"
 description = "Small Unix-style document conversion tools in one multicall command."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -32,8 +32,47 @@ dependencies = [
 
 [project.scripts]
 sumdoc = "sumdoc.cli:entry_point"
-markdown2helpdb = "sumdoc.tools.helpconv:markdown2helpdb_entry_point"
-helpdb2markdown = "sumdoc.tools.helpconv:helpdb2markdown_entry_point"
+
+# Installed multicall launchers.  All of these dispatch through the same
+# SumDoc entry point; the invoked filename selects the tool.
+image2text = "sumdoc.cli:entry_point"
+image2ascii = "sumdoc.cli:entry_point"
+image2ansi = "sumdoc.cli:entry_point"
+image2braille = "sumdoc.cli:entry_point"
+png2webp = "sumdoc.cli:entry_point"
+image2webp = "sumdoc.cli:entry_point"
+webp2png = "sumdoc.cli:entry_point"
+image2png = "sumdoc.cli:entry_point"
+pdf2png = "sumdoc.cli:entry_point"
+pdf2txt = "sumdoc.cli:entry_point"
+pdf2text = "sumdoc.cli:entry_point"
+png2text = "sumdoc.cli:entry_point"
+png2md = "sumdoc.cli:entry_point"
+image2md = "sumdoc.cli:entry_point"
+markdown2helpdb = "sumdoc.cli:entry_point"
+md2helpdb = "sumdoc.cli:entry_point"
+helpdb2markdown = "sumdoc.cli:entry_point"
+helpdb2md = "sumdoc.cli:entry_point"
+clipinfo = "sumdoc.cli:entry_point"
+clipboard-info = "sumdoc.cli:entry_point"
+clipbesttype = "sumdoc.cli:entry_point"
+clipboard-best = "sumdoc.cli:entry_point"
+clip2md = "sumdoc.cli:entry_point"
+clipboard2md = "sumdoc.cli:entry_point"
+clip2png = "sumdoc.cli:entry_point"
+clipboard2png = "sumdoc.cli:entry_point"
+clip2rtf = "sumdoc.cli:entry_point"
+clipboard-save = "sumdoc.cli:entry_point"
+md2rich = "sumdoc.cli:entry_point"
+lessrich = "sumdoc.cli:entry_point"
+markdown2rich = "sumdoc.cli:entry_point"
+md2html = "sumdoc.cli:entry_point"
+markdown2html = "sumdoc.cli:entry_point"
+html2md = "sumdoc.cli:entry_point"
+html2markdown = "sumdoc.cli:entry_point"
+md2pdf = "sumdoc.cli:entry_point"
+md2pdfpipe = "sumdoc.cli:entry_point"
+markdown2pdf = "sumdoc.cli:entry_point"
 
 [project.optional-dependencies]
 help = [

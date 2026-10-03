@@ -87,3 +87,16 @@ def test_live_help_tool_is_registered_but_not_installed_as_generic_help_link():
     from sumdoc.registry import all_invocation_names, resolve_tool;
     assert resolve_tool("help").name == "help";
     assert "help" not in all_invocation_names();
+
+
+def test_packaging_installs_all_multicall_names():
+    import tomllib;
+    from sumdoc.registry import all_invocation_names;
+
+    project_root = Path(__file__).parents[1];
+    metadata = tomllib.loads((project_root / "pyproject.toml").read_text(encoding="utf-8"));
+    scripts = metadata["project"]["scripts"];
+    assert scripts["sumdoc"] == "sumdoc.cli:entry_point";
+    assert set(all_invocation_names()).issubset(set(scripts));
+    for name in all_invocation_names():
+        assert scripts[name] == "sumdoc.cli:entry_point";

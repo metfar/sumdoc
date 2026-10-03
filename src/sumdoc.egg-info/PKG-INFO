@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sumdoc
-Version: 0.2.9
+Version: 0.2.10
 Summary: Small Unix-style document conversion tools in one multicall command.
 Author-email: William Martinez Bas <metfar@gmail.com>
 License-Expression: GPL-2.0-or-later
@@ -29,6 +29,8 @@ Requires-Dist: PyMuPDF>=1.22; extra == "pdf"
 Requires-Dist: pdfminer.six>=20221105; extra == "pdf"
 Provides-Extra: markdown
 Requires-Dist: WeasyPrint>=60; extra == "markdown"
+Provides-Extra: rich
+Requires-Dist: rich>=13; extra == "rich"
 Provides-Extra: ocr
 Requires-Dist: opencv-python>=4.8; extra == "ocr"
 Requires-Dist: pytesseract>=0.3.10; extra == "ocr"
@@ -40,6 +42,7 @@ Requires-Dist: Pillow>=10; extra == "all"
 Requires-Dist: PyMuPDF>=1.22; extra == "all"
 Requires-Dist: pdfminer.six>=20221105; extra == "all"
 Requires-Dist: WeasyPrint>=60; extra == "all"
+Requires-Dist: rich>=13; extra == "all"
 Requires-Dist: opencv-python>=4.8; extra == "all"
 Requires-Dist: pytesseract>=0.3.10; extra == "all"
 Requires-Dist: img2table>=1.2; extra == "all"
