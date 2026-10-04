@@ -45,13 +45,14 @@ def test_markdown_html_round_trip(tmp_path):
 
 
 def test_pdf_render_and_text_extract(tmp_path):
-    fitz = pytest.importorskip("fitz");
+    pytest.importorskip("pypdfium2");
+    Image = pytest.importorskip("PIL.Image");
+    canvas_module = pytest.importorskip("reportlab.pdfgen.canvas");
     pdf_path = tmp_path / "sample.pdf";
-    document = fitz.open();
-    page = document.new_page(width=595.275590551, height=841.889763780);
-    page.insert_text((72, 72), "Hello from SumDoc");
-    document.save(str(pdf_path));
-    document.close();
+    document = canvas_module.Canvas(str(pdf_path), pagesize=(595.275590551, 841.889763780));
+    document.drawString(72, 841.889763780 - 72, "Hello from SumDoc");
+    document.showPage();
+    document.save();
     png_path = tmp_path / "page.png";
     result = pdf2png.main(
         [str(pdf_path), "--pages", "1", "--dpi", "300"],
@@ -59,9 +60,10 @@ def test_pdf_render_and_text_extract(tmp_path):
     );
     assert result == 0;
     assert png_path.exists();
-    pixmap = fitz.Pixmap(str(png_path));
-    assert pixmap.width == 2481;
-    assert pixmap.height == 3508;
+    with Image.open(png_path) as pixmap:
+        assert pixmap.width == 2481;
+        assert pixmap.height == 3508;
+        assert pixmap.info["dpi"][0] == pytest.approx(300, abs=0.1);
     text_path = tmp_path / "sample.txt";
     result = pdf2txt.main(
         [str(pdf_path)],

@@ -1,3 +1,10 @@
+## 0.3.2 - 2026-10-04
+
+- Replace the PyMuPDF/fitz backend in `pdf2png` with `pypdfium2` (PDFium).
+- Preserve page selection, 300/600 DPI PNG output, password support, naming and CLI behavior.
+- Update `pdf` and `all` optional dependency groups and PDF conversion tests.
+- Keep `pdf2txt` on `pdfminer.six`; no change to the OCR backend.
+
 ## 0.3.1 - 2026-10-03
 
 - Make `sumdoc banner` multiline: actual newlines and literal `\n` in command-line text start a new bitmap text row.

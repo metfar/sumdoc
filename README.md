@@ -1,4 +1,4 @@
-# SumDoc 0.2.9
+# SumDoc 0.3.2
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -40,6 +40,15 @@ This keeps application code small.  A terminal, editor, IDE, BASIC environment, 
 ## Help database model
 
 SumDoc owns the editable Markdown ↔ `.helpdb` conversion used by SUM help systems.  Version 0.2.7 preserves punctuation inside individual Notes bullets while continuing to split comma-separated `See also` and `Aliases` entries.  Runtime UIs may consume compiled `.helpdb` files without depending on SumDoc itself.
+
+## PDF conversion backends
+
+`pdf2png` uses **pypdfium2** (PDFium) for page rendering, while `pdf2txt`
+uses **pdfminer.six** for text and structured extraction. Install the PDF
+extras with `python -m pip install "sumdoc[pdf]"`. The PDFium binary
+distribution carries separate third-party license notices, which must be
+respected when redistributing bundled executables. OCR uses separate optional
+dependencies (`sumdoc[ocr]`).
 
 ## License
 

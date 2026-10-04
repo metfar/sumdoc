@@ -36,15 +36,13 @@ A4_HEIGHT_PT = 841.889763780;
 VALID_DPI = (300, 600);
 
 
-def import_fitz():
+def import_pdfium():
     try:
-        import pymupdf as fitz;
-    except ImportError:
-        try:
-            import fitz;
-        except ImportError as error:
-            raise ImportError("PyMuPDF is required for pdf2png.") from error;
-    return (fitz);
+        import pypdfium2 as pdfium;
+    except ImportError as error:
+        raise ImportError("pypdfium2 is required for pdf2png.") from error;
+    return (pdfium);
+
 
 
 def parse_pages(specification: str | None, total_pages: int) -> list[int]:
@@ -75,25 +73,24 @@ def parse_pages(specification: str | None, total_pages: int) -> list[int]:
     return (sorted(number - 1 for number in pages));
 
 
-def page_render_area(page, fitz):
-    rectangle = page.rect;
-    if rectangle.width > 0 and rectangle.height > 0:
-        return (None, False);
-    return (fitz.Rect(0.0, 0.0, A4_WIDTH_PT, A4_HEIGHT_PT), True);
+def page_render_area(page):
+    width = page.get_width();
+    height = page.get_height();
+    if width > 0 and height > 0:
+        return (False);
+    return (True);
 
 
-def render_page(page, dpi: int, fitz, area=None):
-    arguments = {"colorspace": fitz.csRGB, "alpha": False};
-    if area is not None:
-        arguments["clip"] = area;
+def render_page(page, dpi: int):
+    # Both libraries interpret a PDF canvas unit as 1/72 inch by default.
+    bitmap = page.render(scale=dpi / POINTS_PER_INCH, fill_color=(255, 255, 255, 255));
     try:
-        return (page.get_pixmap(dpi=dpi, **arguments));
-    except TypeError:
-        scale = dpi / POINTS_PER_INCH;
-        pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), **arguments);
-        if hasattr(pixmap, "set_dpi"):
-            pixmap.set_dpi(dpi, dpi);
-        return (pixmap);
+        image = bitmap.to_pil().convert("RGB");
+    finally:
+        bitmap.close();
+    image.info["dpi"] = (dpi, dpi);
+    return (image);
+
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -121,17 +118,17 @@ def create_parser() -> argparse.ArgumentParser:
 def main(arguments: list[str] | None, options: GlobalOptions) -> int:
     args = create_parser().parse_args(arguments);
     reporter = Reporter(options);
-    fitz = import_fitz();
+    pdfium = import_pdfium();
     pdf_path = require_input_file(args.pdf, (".pdf",));
-    document = fitz.open(str(pdf_path));
+    try:
+        document = pdfium.PdfDocument(str(pdf_path), password=args.password);
+    except pdfium.PdfiumError as error:
+        if "password" in str(error).lower():
+            raise PermissionError("Unable to open encrypted PDF. Supply a valid --password.") from error;
+        raise;
     generated = 0;
     try:
-        if document.needs_pass:
-            if not args.password:
-                raise PermissionError("The PDF is encrypted. Use --password to open it.");
-            if not document.authenticate(args.password):
-                raise PermissionError("The supplied PDF password is not valid.");
-        total_pages = document.page_count;
+        total_pages = len(document);
         if total_pages == 0:
             raise ValueError("The PDF does not contain any pages.");
         selected = parse_pages(args.pages, total_pages);
@@ -164,22 +161,30 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
                 continue;
             if output_path is not None:
                 check_writable(output_path, True);
-            page = document.load_page(index);
-            area, used_a4 = page_render_area(page, fitz);
-            if used_a4:
-                reporter.warning(f"Page {page_number} has no valid dimensions; A4 is being used as a fallback.");
-            pixmap = render_page(page, args.dpi, fitz, area);
-            if output_path is None:
-                sys.stdout.buffer.write(pixmap.tobytes("png"));
-                sys.stdout.buffer.flush();
-                destination = "standard output";
-            else:
-                pixmap.save(str(output_path));
-                destination = str(output_path);
-            generated += 1;
-            reporter.success(
-                f"Page {page_number}/{total_pages}: {destination} ({pixmap.width}x{pixmap.height} px)"
-            );
+            page = document[index];
+            try:
+                if page_render_area(page):
+                    reporter.warning(f"Page {page_number} has no valid dimensions; PDFium will attempt rendering using its page box.");
+                image = render_page(page, args.dpi);
+            finally:
+                page.close();
+            try:
+                if output_path is None:
+                    from io import BytesIO;
+                    buffer = BytesIO();
+                    image.save(buffer, format="PNG", dpi=(args.dpi, args.dpi));
+                    sys.stdout.buffer.write(buffer.getvalue());
+                    sys.stdout.buffer.flush();
+                    destination = "standard output";
+                else:
+                    image.save(str(output_path), format="PNG", dpi=(args.dpi, args.dpi));
+                    destination = str(output_path);
+                generated += 1;
+                reporter.success(
+                    f"Page {page_number}/{total_pages}: {destination} ({image.width}x{image.height} px)"
+                );
+            finally:
+                image.close();
     finally:
         document.close();
     reporter.info(f"Generated {generated} PNG file(s).");
