@@ -1,0 +1,47 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.5;
+    margin: 2rem auto;
+    max-width: 70rem;
+    padding: 0 1rem;
+}
+pre {
+    background: #f4f4f4;
+    overflow-x: auto;
+    padding: 1rem;
+}
+code {
+    font-family: monospace;
+}
+pre.terminal {
+    background: #101214;
+    color: #d3d7cf;
+    line-height: 1.25;
+    tab-size: 8;
+    white-space: pre;
+}
+pre.terminal code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                 "Liberation Mono", "Courier New", monospace;
+}
+.ansi-blink {
+    animation: sumdoc-ansi-blink 1s steps(1, end) infinite;
+}
+@keyframes sumdoc-ansi-blink {
+    50% {
+        opacity: 0;
+    }
+}
+table {
+    border-collapse: collapse;
+}
+th,
+td {
+    border: 1px solid #888;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+}
+img {
+    height: auto;
+    max-width: 100%;
+}

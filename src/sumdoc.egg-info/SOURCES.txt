@@ -25,6 +25,7 @@ src/sumdoc/styles/dark.css
 src/sumdoc/styles/default.css
 src/sumdoc/tools/__init__.py
 src/sumdoc/tools/clipboard_tools.py
+src/sumdoc/tools/fontbitmap.py
 src/sumdoc/tools/helpconv.py
 src/sumdoc/tools/helpview.py
 src/sumdoc/tools/html2md.py
@@ -36,10 +37,13 @@ src/sumdoc/tools/md2pdf.py
 src/sumdoc/tools/pdf2png.py
 src/sumdoc/tools/pdf2txt.py
 src/sumdoc/tools/png2text.py
+src/sumdoc/tools/text2image.py
 tests/test_cli.py
 tests/test_clipboard.py
 tests/test_converters.py
+tests/test_fontbitmap.py
 tests/test_helpview.py
 tests/test_imagetext.py
 tests/test_lessrich.py
 tests/test_multicall.py
+tests/test_text2image.py
