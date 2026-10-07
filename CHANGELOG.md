@@ -1,3 +1,11 @@
+## Unreleased 0.3.2i
+
+- Improve `png2text` OCR for screenshots and terminals with `--mode auto|document|screen|terminal`.
+- Use mode-specific OCR defaults: documents use PSM 3 / 2x scaling; screen and terminal captures use PSM 6 / 4x scaling plus local contrast enhancement.
+- Detect dark terminal-like screenshots automatically and skip table detection for them.
+- Validate the external Tesseract executable and requested language data before OCR, with actionable Debian/Ubuntu installation guidance.
+- Add regression tests for OCR mode defaults, terminal mode parsing, missing Tesseract, and missing language data.
+
 ## 0.3.2 - 2026-10-04
 
 - Replace the PyMuPDF/fitz backend in `pdf2png` with `pypdfium2` (PDFium).
