@@ -607,3 +607,8 @@ The distinction is intentional: a browser selection can be pasted normally as te
 
 For **Paste Special → ASCII art**, SumDoc uses ordinary printable ASCII (` .:-=+*#%@`) and measures contrast relative to the image's dominant background. The result therefore survives copying into plain-text files and terminals without relying on foreground/background colors or Unicode block cells. **ASCII art + OCR** overlays recognized words on the same color-independent representation.
 
+
+
+### Native FST input
+
+`tableconvert` can read R `fst` files without R through the optional `fstio` backend (`pip install sumdoc[fst]`). FST output remains read-only in this revision.

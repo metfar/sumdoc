@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sumdoc
-Version: 0.3.2.1
+Version: 0.3.2.2
 Summary: Small Unix-style document conversion tools in one multicall command.
 Author-email: William Martinez Bas <metfar@gmail.com>
 License-Expression: GPL-2.0-or-later
@@ -18,6 +18,7 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE
 License-File: COPYING
+Requires-Dist: sumcore>=0.1.0a22
 Requires-Dist: Markdown>=3.5
 Requires-Dist: markdownify>=0.11
 Requires-Dist: WeasyPrint>=60
@@ -30,6 +31,11 @@ Requires-Dist: pypdfium2>=4.0; extra == "pdf"
 Requires-Dist: pdfminer.six>=20221105; extra == "pdf"
 Provides-Extra: rich
 Requires-Dist: rich>=13; extra == "rich"
+Provides-Extra: table
+Requires-Dist: pandas>=2; extra == "table"
+Requires-Dist: pyarrow>=14; extra == "table"
+Provides-Extra: fst
+Requires-Dist: fstio>=0.1.1; extra == "fst"
 Provides-Extra: ocr
 Requires-Dist: opencv-python>=4.8; extra == "ocr"
 Requires-Dist: pytesseract>=0.3.10; extra == "ocr"
@@ -41,6 +47,9 @@ Requires-Dist: Pillow>=10; extra == "all"
 Requires-Dist: pypdfium2>=4.0; extra == "all"
 Requires-Dist: pdfminer.six>=20221105; extra == "all"
 Requires-Dist: rich>=13; extra == "all"
+Requires-Dist: pandas>=2; extra == "all"
+Requires-Dist: pyarrow>=14; extra == "all"
+Requires-Dist: fstio>=0.1.1; extra == "all"
 Requires-Dist: opencv-python>=4.8; extra == "all"
 Requires-Dist: pytesseract>=0.3.10; extra == "all"
 Requires-Dist: img2table>=1.2; extra == "all"
@@ -50,11 +59,11 @@ Requires-Dist: build>=1.2; extra == "dev"
 Requires-Dist: pytest>=8; extra == "dev"
 Dynamic: license-file
 
-# SumDoc 0.3.2
+# SumDoc 0.3.2i
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
-A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `text2image`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, or `md2pdf`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
+A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `text2image`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, `md2pdf`, or `tableconvert`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
@@ -88,6 +97,26 @@ The operating-system transport and the visual presentation remain separate conce
 Markdown is the preferred editable interchange format for textual documentation.  Rich clipboard formats such as HTML or RTF can be normalized to Markdown; Markdown can then be published as styled HTML, exported to other document formats, or compiled to `.helpdb` for fast runtime help.  Images remain binary assets and can be referenced from Markdown when a document-oriented application pastes them.
 
 This keeps application code small.  A terminal, editor, IDE, BASIC environment, or future SUM application should not need its own RTF parser, Markdown converter, clipboard-type policy, or help compiler.
+
+## SUMTAB native table format
+
+SUMTAB is the native SUM tabular interchange/cache format. It is a UTF-8, line-oriented format designed to preserve a portable schema and index definitions while remaining simple enough to implement directly in sumBASIC. Type and schema authority lives above individual language runtimes in `sumCore`; SumDoc owns the document codec and conversion tool.
+
+`tableconvert` converts supported formats through the common SUM table model:
+
+```sh
+sumdoc tableconvert data.csv data.sumtab
+sumdoc tableconvert data.sqlite data.sumtab --table customers
+sumdoc tableconvert data.sumtab data.sqlite --table customers
+sumdoc tableconvert legacy.dbf legacy.sumtab
+sumdoc tableconvert data.sumtab export.dbf --profile auto
+```
+
+When the output is omitted, a non-SUMTAB input is converted to a sibling `.sumtab` file. `--profile` defaults to `auto`; the DBF writer currently selects the broadly compatible dBASE III record profile when the schema is representable. SQLite index definitions are stored as portable SUMTAB metadata and regenerated on export; native database/index files themselves are not embedded in SUMTAB.
+
+Conversions are cached under the XDG cache directory (normally `~/.cache/sumdoc/tableconvert`). If the source and conversion options have not changed, SumDoc reuses the existing result. If the source changes but the target still matches the previous cached product, the target is refreshed automatically. A target modified outside SumDoc is never silently overwritten; use `--force` deliberately.
+
+CSV/TSV, gzip-compressed CSV/TSV, SQLite and core DBF conversion use the Python standard library. Parquet is an optional backend loaded only when requested. RDS and FST are reserved for native backends and are intentionally not routed through Rscript.
 
 ## Help database model
 
@@ -130,6 +159,7 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `md2html` | Convert Markdown or preformatted terminal text to HTML. | `markdown2html` |
 | `html2md` | Convert HTML to Markdown. | `html2markdown` |
 | `md2pdf` | Convert Markdown or preformatted terminal text to PDF. | `md2pdfpipe`, `markdown2pdf` |
+| `tableconvert` | Convert SUMTAB, CSV/TSV, SQLite, DBF, and optional Parquet tables while preserving portable schema/index definitions. | `tableconv` |
 
 ## Installation
 
@@ -146,6 +176,7 @@ python3 -m pip install --user '.[image]'
 python3 -m pip install --user '.[pdf]'
 python3 -m pip install --user '.[markdown]'
 python3 -m pip install --user '.[ocr]'
+python3 -m pip install --user '.[table]'
 ```
 
 The OCR tools also require a working Tesseract executable and the desired language data on the operating system.
@@ -173,6 +204,8 @@ png2text  -> sumdoc
 md2html         -> sumdoc
 html2md         -> sumdoc
 md2pdf          -> sumdoc
+tableconvert    -> sumdoc
+tableconv       -> sumdoc
 markdown2helpdb -> sumdoc
 md2helpdb       -> sumdoc
 helpdb2markdown -> sumdoc
@@ -635,3 +668,8 @@ The distinction is intentional: a browser selection can be pasted normally as te
 
 For **Paste Special → ASCII art**, SumDoc uses ordinary printable ASCII (` .:-=+*#%@`) and measures contrast relative to the image's dominant background. The result therefore survives copying into plain-text files and terminals without relying on foreground/background colors or Unicode block cells. **ASCII art + OCR** overlays recognized words on the same color-independent representation.
 
+
+
+### Native FST input
+
+`tableconvert` can read R `fst` files without R through the optional `fstio` backend (`pip install sumdoc[fst]`). FST output remains read-only in this revision.

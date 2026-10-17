@@ -1,3 +1,19 @@
+
+## Unreleased
+
+### SUMTAB/FST packaging completion
+
+- Requires `sumcore>=0.1.0a22`, the first sumCore revision containing the
+  authoritative `sumcore.schema` module.
+- Keeps FST reading native and lazy through optional `fstio>=0.1.1`; R and
+  `rpy2` are not used.
+- Adds actionable diagnostics when an older sumCore is present.
+- Source distributions are cleaned of `.git`, pytest caches and bytecode.
+
+
+- Add native, read-only R `fst` input to `tableconvert` through the optional MPL-2.0 `fstio` backend; no R or rpy2 process is required.
+- Preserve FST key-column metadata as a portable SUM index definition when available.
+- Improve pandas nullable-value conversion used by Parquet/FST adapters.
 ## Unreleased 0.3.2i
 
 - Improve `png2text` OCR for screenshots and terminals with `--mode auto|document|screen|terminal`.

@@ -15,6 +15,7 @@ src/sumdoc/common.py
 src/sumdoc/helpdb.py
 src/sumdoc/helpview.py
 src/sumdoc/registry.py
+src/sumdoc/sumtab.py
 src/sumdoc.egg-info/PKG-INFO
 src/sumdoc.egg-info/SOURCES.txt
 src/sumdoc.egg-info/dependency_links.txt
@@ -37,6 +38,7 @@ src/sumdoc/tools/md2pdf.py
 src/sumdoc/tools/pdf2png.py
 src/sumdoc/tools/pdf2txt.py
 src/sumdoc/tools/png2text.py
+src/sumdoc/tools/tableconvert.py
 src/sumdoc/tools/text2image.py
 tests/test_cli.py
 tests/test_clipboard.py
@@ -47,4 +49,5 @@ tests/test_imagetext.py
 tests/test_lessrich.py
 tests/test_multicall.py
 tests/test_png2text.py
+tests/test_sumtab.py
 tests/test_text2image.py

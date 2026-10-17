@@ -3,6 +3,7 @@
 #pylint:disable=W0301
 
 from datetime import date, datetime;
+from pathlib import Path;
 from decimal import Decimal;
 import sqlite3;
 
@@ -122,3 +123,62 @@ def test_sqlite_expression_index_definition_is_portable(tmp_path):
             "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_lower_name'"
         ).fetchone()[0];
     assert "lower(name)" in sql;
+
+
+def test_fst_backend_uses_fstio_without_r(tmp_path, monkeypatch):
+    import sys;
+    import types;
+    import pandas as pd;
+
+    source = tmp_path / "sample.fst";
+    source.write_bytes(b"placeholder");
+
+    fake_meta = types.SimpleNamespace(
+        num_rows=2,
+        column_names=("id", "name", "active"),
+        keys=("id",),
+    );
+
+    fake_module = types.SimpleNamespace(
+        read_fst=lambda path: pd.DataFrame({
+            "id": pd.Series([1, 2], dtype="Int32"),
+            "name": ["Ana", "Seba"],
+            "active": pd.Series([True, None], dtype="boolean"),
+        }),
+        metadata_fst=lambda path: fake_meta,
+    );
+    monkeypatch.setitem(sys.modules, "fstio", fake_module);
+
+    table = tableconvert.read_fst(source);
+    assert table.metadata["source_format"] == "FST";
+    assert table.metadata["source_backend"] == "fstio";
+    assert table.metadata["fst_rows"] == "2";
+    assert table.indexes[0].columns == ("id",);
+    assert table.rows == [(1, "Ana", True), (2, "Seba", None)];
+
+
+def test_fst_backend_missing_dependency_has_install_hint(tmp_path, monkeypatch):
+    import builtins;
+
+    source = tmp_path / "sample.fst";
+    source.write_bytes(b"placeholder");
+    real_import = builtins.__import__;
+
+    def fake_import(name, *args, **kwargs):
+        if name == "fstio":
+            raise ImportError("missing fstio");
+        return real_import(name, *args, **kwargs);
+
+    monkeypatch.setattr(builtins, "__import__", fake_import);
+    try:
+        tableconvert.read_fst(source);
+    except ImportError as exc:
+        assert "pip install sumdoc[fst]" in str(exc);
+    else:
+        raise AssertionError("Expected ImportError when fstio is unavailable.");
+
+
+def test_sumdoc_declares_schema_capable_sumcore():
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml";
+    text = pyproject.read_text(encoding="utf-8");
+    assert '"sumcore>=0.1.0a22"' in text;

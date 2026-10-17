@@ -35,7 +35,14 @@ import sqlite3;
 import struct;
 from typing import Iterable;
 
-from sumcore.schema import canonical_type;
+try:
+    from sumcore.schema import canonical_type;
+except ModuleNotFoundError as exc:
+    if exc.name == "sumcore.schema":
+        raise ImportError(
+            "tableconvert requires sumcore>=0.1.0a22; upgrade sumCore before SumDoc."
+        ) from exc;
+    raise;
 from sumdoc.common import GlobalOptions, Reporter, ensure_parent, require_input_file;
 from sumdoc.sumtab import SumColumn, SumIndex, SumTable, read_sumtab, write_sumtab;
 
@@ -778,12 +785,20 @@ def write_dbf(table: SumTable, path: Path, profile: str, encoding: str) -> None:
         handle.write(b"\x1A");
 
 
-def _from_pandas(frame) -> SumTable:
+def _from_pandas(frame, source_format: str = "Pandas") -> SumTable:
+    try:
+        import pandas as pd;
+    except ImportError as exc:
+        raise ImportError("Converting a pandas DataFrame needs pandas.") from exc;
+
     columns = [];
     for name in frame.columns:
         series = frame[name];
         dtype = str(series.dtype).lower();
-        if "int" in dtype:
+        if "category" in dtype:
+            maximum = max([len(str(value)) for value in series.dropna().tolist()] or [1]);
+            columns.append(SumColumn(str(name), "VARCHAR", "VARCHAR({})".format(maximum), length=maximum));
+        elif "int" in dtype:
             columns.append(SumColumn(str(name), "INTEGER", str(series.dtype)));
         elif "float" in dtype:
             columns.append(SumColumn(str(name), "FLOAT", str(series.dtype)));
@@ -791,9 +806,12 @@ def _from_pandas(frame) -> SumTable:
             columns.append(SumColumn(str(name), "LOGICAL", str(series.dtype)));
         elif "datetime" in dtype:
             columns.append(SumColumn(str(name), "DATETIME", str(series.dtype)));
+        elif "timedelta" in dtype:
+            columns.append(SumColumn(str(name), "FLOAT", str(series.dtype)));
         else:
             maximum = max([len(str(value)) for value in series.dropna().tolist()] or [1]);
             columns.append(SumColumn(str(name), "VARCHAR", "VARCHAR({})".format(maximum), length=maximum));
+
     rows = [];
     for record in frame.itertuples(index=False, name=None):
         converted = [];
@@ -802,7 +820,8 @@ def _from_pandas(frame) -> SumTable:
                 converted.append(None);
                 continue;
             try:
-                if value != value:
+                missing = pd.isna(value);
+                if isinstance(missing, bool) and missing:
                     converted.append(None);
                     continue;
             except Exception:  # pylint:disable=broad-exception-caught
@@ -816,7 +835,40 @@ def _from_pandas(frame) -> SumTable:
                     pass;
             converted.append(value);
         rows.append(tuple(converted));
-    return (SumTable(columns=columns, rows=rows, metadata={"source_format": "Parquet"}));
+    return (SumTable(columns=columns, rows=rows, metadata={"source_format": source_format}));
+
+
+def read_fst(path: Path) -> SumTable:
+    try:
+        from fstio import metadata_fst, read_fst as fstio_read_fst;
+    except ImportError as exc:
+        raise ImportError(
+            "Native FST conversion needs the optional fstio backend. "
+            "Install it with 'pip install fstio' or 'pip install sumdoc[fst]'."
+        ) from exc;
+
+    frame = fstio_read_fst(str(path));
+    table = _from_pandas(frame, source_format="FST");
+
+    try:
+        metadata = metadata_fst(str(path));
+        table.metadata["fst_rows"] = str(metadata.num_rows);
+        keys = tuple(getattr(metadata, "keys", ()) or ());
+        if keys:
+            table.metadata["fst_keys"] = ",".join(str(key) for key in keys);
+            table.indexes.append(SumIndex(
+                name="fst_key",
+                columns=tuple(str(key) for key in keys),
+                unique=False,
+                origin="fst-key",
+            ));
+    except Exception:  # pylint:disable=broad-exception-caught
+        # Reading the data succeeded; metadata enrichment must not make the
+        # conversion fail if an older/newer fstio metadata API is encountered.
+        pass;
+
+    table.metadata["source_backend"] = "fstio";
+    return (table);
 
 
 def read_parquet(path: Path) -> SumTable:
@@ -828,7 +880,7 @@ def read_parquet(path: Path) -> SumTable:
         frame = pd.read_parquet(path);
     except ImportError as exc:
         raise ImportError("Parquet conversion needs a Parquet engine such as pyarrow.") from exc;
-    return (_from_pandas(frame));
+    return (_from_pandas(frame, source_format="Parquet"));
 
 
 def write_parquet(table: SumTable, path: Path) -> None:
@@ -859,7 +911,7 @@ def read_table(path: Path, fmt: str, args) -> SumTable:
     if fmt == "rds":
         raise ImportError("Native RDS conversion is reserved for the SUM table backend; no dependency-free RDS reader is installed yet.");
     if fmt == "fst":
-        raise ImportError("Native FST conversion is reserved for the SUM table backend; no dependency-free FST reader is installed yet.");
+        return (read_fst(path));
     raise ValueError("Unsupported input format: {}.".format(fmt));
 
 
@@ -971,7 +1023,7 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
         print("dbf\tdBASE-compatible table; destination profile defaults to auto");
         print("parquet\toptional pandas/Parquet backend");
         print("rds\treserved native backend (not implemented in this revision)");
-        print("fst\treserved native backend (not implemented in this revision)");
+        print("fst\tnative read-only backend via optional fstio");
         return (0);
     if args.input is None:
         raise ValueError("tableconvert requires an input file unless --list-formats is used.");

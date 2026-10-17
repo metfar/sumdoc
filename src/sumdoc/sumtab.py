@@ -36,7 +36,15 @@ import json;
 import math;
 import uuid;
 
-from sumcore.schema import SUMTAB_FORMAT, canonical_type;
+try:
+    from sumcore.schema import SUMTAB_FORMAT, canonical_type;
+except ModuleNotFoundError as exc:
+    if exc.name == "sumcore.schema":
+        raise ImportError(
+            "SUMTAB requires sumcore>=0.1.0a22; the installed sumCore is older "
+            "and does not provide sumcore.schema."
+        ) from exc;
+    raise;
 
 
 MAGIC = "SUMTAB";
