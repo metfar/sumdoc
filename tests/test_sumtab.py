@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#pylint:disable=W0301
+
+from datetime import date, datetime;
+from decimal import Decimal;
+import sqlite3;
+
+from sumdoc.common import GlobalOptions;
+from sumdoc.sumtab import SumColumn, SumIndex, SumTable, dumps, loads, read_sumtab;
+from sumdoc.tools import tableconvert;
+
+
+def sample_table():
+    return SumTable(
+        columns=[
+            SumColumn("id", "INTEGER", "AUTONUM", nullable=False, primary_key=True, autoinum=True),
+            SumColumn("name", "VARCHAR", "VARCHAR(40)", length=40),
+            SumColumn("amount", "NUMERIC", "CURRENCY", precision=19, scale=4),
+            SumColumn("active", "LOGICAL", "BOOLEAN"),
+            SumColumn("created", "DATE", "DATE"),
+            SumColumn("note", "TEXT", "TEXT"),
+        ],
+        rows=[
+            (1, "Ana\tPérez", Decimal("12.3400"), True, date(2026, 10, 10), "line 1\nline 2"),
+            (2, r"literal \N", None, False, None, ""),
+        ],
+        indexes=[SumIndex("idx_name", ("name",), unique=False)],
+        metadata={"table": "people"},
+    );
+
+
+def test_sumtab_round_trip_preserves_schema_values_and_indexes():
+    table = sample_table();
+    restored = loads(dumps(table));
+    assert restored.column_names == table.column_names;
+    assert restored.columns[2].declared_type == "CURRENCY";
+    assert restored.columns[2].precision == 19;
+    assert restored.columns[2].scale == 4;
+    assert restored.rows == table.rows;
+    assert restored.indexes == table.indexes;
+    assert restored.metadata["schema"] == "sumtab/1";
+
+
+def test_sqlite_round_trip_regenerates_index_definition(tmp_path):
+    table = sample_table();
+    target = tmp_path / "people.sqlite";
+    tableconvert.write_sqlite(table, target, "people");
+    restored = tableconvert.read_sqlite(target, "people");
+    assert [index.name for index in restored.indexes] == ["idx_name"];
+    assert restored.indexes[0].columns == ("name",);
+    assert restored.rows[0][2] == Decimal("12.3400");
+    assert restored.rows[0][3] is True;
+    assert restored.rows[1][3] is False;
+    with sqlite3.connect(target) as connection:
+        names = [row[1] for row in connection.execute("PRAGMA index_list(people)")];
+    assert "idx_name" in names;
+
+
+def test_dbf_auto_profile_round_trip_core_types(tmp_path):
+    table = SumTable(
+        columns=[
+            SumColumn("ID", "INTEGER"),
+            SumColumn("NAME", "CHARACTER", length=20),
+            SumColumn("PRICE", "NUMERIC", precision=8, scale=2),
+            SumColumn("ACTIVE", "LOGICAL"),
+            SumColumn("CREATED", "DATE"),
+        ],
+        rows=[
+            (1, "One", Decimal("12.50"), True, date(2026, 10, 10)),
+            (2, "Two", Decimal("3.25"), False, date(2026, 10, 11)),
+        ],
+    );
+    target = tmp_path / "sample.dbf";
+    tableconvert.write_dbf(table, target, "auto", "auto");
+    restored = tableconvert.read_dbf(target, "auto");
+    assert restored.metadata["dbf_profile"] == "dbase3";
+    assert restored.column_names == table.column_names;
+    assert restored.rows[0][0] == Decimal("1");
+    assert restored.rows[0][1] == "One";
+    assert restored.rows[0][2] == Decimal("12.50");
+    assert restored.rows[0][3] is True;
+    assert restored.rows[0][4] == date(2026, 10, 10);
+
+
+def test_tableconvert_defaults_to_sumtab_and_reuses_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"));
+    source = tmp_path / "sample.csv";
+    source.write_text("id,name\n1,Ana\n2,Seba\n", encoding="utf-8");
+    options = GlobalOptions(quiet=True);
+    assert tableconvert.main([str(source)], options) == 0;
+    target = tmp_path / "sample.sumtab";
+    assert target.exists();
+    first_mtime = target.stat().st_mtime_ns;
+    assert tableconvert.main([str(source)], options) == 0;
+    assert target.stat().st_mtime_ns == first_mtime;
+    restored = read_sumtab(target);
+    assert restored.column_names == ("id", "name");
+    assert restored.rows[1][1] == "Seba";
+
+
+def test_tableconvert_list_formats_needs_no_input(capsys):
+    assert tableconvert.main(["--list-formats"], GlobalOptions(quiet=True)) == 0;
+    assert "sumtab" in capsys.readouterr().out;
+
+
+def test_sqlite_expression_index_definition_is_portable(tmp_path):
+    source = tmp_path / "source.sqlite";
+    with sqlite3.connect(source) as connection:
+        connection.execute("CREATE TABLE people (name TEXT)");
+        connection.execute("CREATE INDEX idx_lower_name ON people (lower(name))");
+        connection.execute("INSERT INTO people VALUES ('Ana')");
+        connection.commit();
+    table = tableconvert.read_sqlite(source, "people");
+    assert len(table.indexes) == 1;
+    assert table.indexes[0].name == "idx_lower_name";
+    assert table.indexes[0].expression == "lower(name)";
+    target = tmp_path / "target.sqlite";
+    tableconvert.write_sqlite(table, target, "people");
+    with sqlite3.connect(target) as connection:
+        sql = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_lower_name'"
+        ).fetchone()[0];
+    assert "lower(name)" in sql;

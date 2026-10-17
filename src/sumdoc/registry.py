@@ -197,6 +197,12 @@ TOOLS = (
         "Convert Markdown or terminal text to PDF, including pipelines.",
         aliases=("md2pdfpipe", "markdown2pdf"),
     ),
+    ToolSpec(
+        "tableconvert",
+        "sumdoc.tools.tableconvert",
+        "Convert tabular documents through native SUMTAB, preserving portable schema/index definitions.",
+        aliases=("tableconv",),
+    ),
 );
 
 TOOL_BY_NAME = {};
