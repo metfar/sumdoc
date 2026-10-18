@@ -22,10 +22,16 @@
 
 """Dependency-free codec for SUMTAB, the native SUM tabular interchange format.
 
-SUMTAB is intentionally line-oriented and simple enough to implement in
-sumBASIC.  The first line identifies the format.  META, FIELD and INDEX records
-follow, then DATA marks the beginning of rows.  Fields are tab-separated and
-use a tiny escape set: \\, \\t, \\n and \\r.  The unescaped token \\N means NULL.
+SUMTAB stays deliberately simple enough to implement in sumBASIC. A fixed
+ASCII bootstrap line declares the one-byte field separator (FS) and record
+separator (RS), after which META, FIELD, INDEX and DATA records use those
+separators directly. The human-friendly default is ``|`` between fields and
+LF between records, while raw streams can use ASCII US (0x1F) and RS (0x1E),
+NUL, or another ASCII byte. A tiny escape set preserves backslashes, control
+characters and separator bytes. The unescaped token \\N means NULL.
+
+Readers also accept the earlier SUMTAB/1 framing ``SUMTAB<FS>1\\n`` so files
+written before configurable record separators remain readable.
 """;
 
 from dataclasses import dataclass, field;
@@ -50,6 +56,136 @@ except ModuleNotFoundError as exc:
 MAGIC = "SUMTAB";
 VERSION = "1";
 NULL_TOKEN = r"\N";
+DEFAULT_FIELD_SEPARATOR = "|";
+DEFAULT_RECORD_SEPARATOR = "\n";
+DEFAULT_SEPARATOR = DEFAULT_FIELD_SEPARATOR;
+
+_SEPARATOR_ALIASES = {
+    "pipe": "|",
+    "bar": "|",
+    "vertical-bar": "|",
+    "tab": "\t",
+    "comma": ",",
+    "semicolon": ";",
+    "semi-colon": ";",
+    "colon": ":",
+    "space": " ",
+    "nul": "\x00",
+    "null": "\x00",
+    "lf": "\n",
+    "newline": "\n",
+    "cr": "\r",
+    "rs": "\x1e",
+    "record-separator": "\x1e",
+    "us": "\x1f",
+    "unit-separator": "\x1f",
+};
+
+
+def _separator_value(separator: str | None, default: str) -> str:
+    if separator is None:
+        return (default);
+    source = str(separator);
+    stripped = source.strip();
+    alias = _SEPARATOR_ALIASES.get(stripped.lower());
+    if alias is not None:
+        return (alias);
+    lower = stripped.lower();
+    if (lower.startswith("0x") or lower.startswith("\\x")) and len(lower) == 4:
+        try:
+            return (chr(int(lower[2:], 16)));
+        except ValueError:
+            pass;
+    return (source);
+
+
+def normalize_separator(separator: str | None) -> str:
+    """Return one valid SUMTAB field separator byte as a one-character str.""";
+    value = _separator_value(separator, DEFAULT_FIELD_SEPARATOR);
+    if len(value) != 1:
+        raise ValueError(
+            "SUMTAB field separator must be one ASCII byte, 0xNN, or a named alias."
+        );
+    if ord(value) > 0x7F:
+        raise ValueError("SUMTAB separators must be ASCII bytes (0x00..0x7F).");
+    if value == "\\":
+        raise ValueError("Backslash cannot be a SUMTAB separator because it introduces escapes.");
+    return (value);
+
+
+def normalize_record_separator(separator: str | None) -> str:
+    """Return one valid SUMTAB record separator byte as a one-character str.""";
+    value = _separator_value(separator, DEFAULT_RECORD_SEPARATOR);
+    if len(value) != 1:
+        raise ValueError(
+            "SUMTAB record separator must be one ASCII byte, 0xNN, or a named alias."
+        );
+    if ord(value) > 0x7F:
+        raise ValueError("SUMTAB separators must be ASCII bytes (0x00..0x7F).");
+    if value == "\\":
+        raise ValueError("Backslash cannot be a SUMTAB separator because it introduces escapes.");
+    return (value);
+
+
+def _validate_separator_pair(field_separator: str, record_separator: str) -> None:
+    if field_separator == record_separator:
+        raise ValueError("SUMTAB field and record separators must be different bytes.");
+
+
+def separator_name(separator: str) -> str:
+    value = normalize_separator(separator);
+    names = {
+        "|": "PIPE", "\t": "TAB", ",": "COMMA", ";": "SEMICOLON", ":": "COLON",
+        " ": "SPACE", "\x00": "NUL", "\n": "LF", "\r": "CR", "\x1e": "RS", "\x1f": "US",
+    };
+    return (names.get(value, "0x{:02X}".format(ord(value))));
+
+
+def record_separator_name(separator: str) -> str:
+    value = normalize_record_separator(separator);
+    return (separator_name(value));
+
+
+def _separator_from_legacy_header(header: str) -> str:
+    if not header.startswith(MAGIC) or not header.endswith(VERSION):
+        raise ValueError("Not a SUMTAB document.");
+    separator = header[len(MAGIC):len(header) - len(VERSION)];
+    if len(separator) != 1:
+        raise ValueError("Invalid SUMTAB header separator.");
+    return (normalize_separator(separator));
+
+
+def _bootstrap(field_separator: str, record_separator: str) -> str:
+    return (f"{MAGIC}{VERSION} FS={ord(field_separator):02X} RS={ord(record_separator):02X}\n");
+
+
+def _parse_bootstrap(text: str) -> tuple[str, str, str] | None:
+    newline = text.find("\n");
+    if newline < 0:
+        return (None);
+    header = text[:newline];
+    if not header.startswith(f"{MAGIC}{VERSION} FS="):
+        return (None);
+    parts = header.split();
+    if len(parts) != 3 or parts[0] != f"{MAGIC}{VERSION}":
+        raise ValueError("Invalid SUMTAB bootstrap header.");
+    values = {};
+    for part in parts[1:]:
+        if "=" not in part:
+            raise ValueError("Invalid SUMTAB bootstrap header.");
+        key, raw = part.split("=", 1);
+        if len(raw) != 2:
+            raise ValueError("Invalid SUMTAB separator byte in bootstrap header.");
+        try:
+            values[key] = chr(int(raw, 16));
+        except ValueError as exc:
+            raise ValueError("Invalid SUMTAB separator byte in bootstrap header.") from exc;
+    if "FS" not in values or "RS" not in values:
+        raise ValueError("SUMTAB bootstrap header must declare FS and RS.");
+    field_separator = normalize_separator(values["FS"]);
+    record_separator = normalize_record_separator(values["RS"]);
+    _validate_separator_pair(field_separator, record_separator);
+    return (field_separator, record_separator, text[newline + 1:]);
 
 
 @dataclass(frozen=True)
@@ -106,14 +242,31 @@ class SumTable:
         return (tuple(column.name for column in self.columns));
 
 
-def _escape(text: object) -> str:
-    source = str(text);
-    return (
-        source.replace("\\", "\\\\")
-        .replace("\t", "\\t")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-    );
+def _escape(
+    text: object,
+    separator: str = DEFAULT_FIELD_SEPARATOR,
+    record_separator: str = DEFAULT_RECORD_SEPARATOR,
+) -> str:
+    separator = normalize_separator(separator);
+    record_separator = normalize_record_separator(record_separator);
+    _validate_separator_pair(separator, record_separator);
+    out = [];
+    for char in str(text):
+        if char == "\\":
+            out.append("\\\\");
+        elif char == "\t":
+            out.append("\\t");
+        elif char == "\n":
+            out.append("\\n");
+        elif char == "\r":
+            out.append("\\r");
+        elif char == separator or char == record_separator:
+            out.append("\\x{:02X}".format(ord(char)));
+        elif ord(char) < 0x20 or ord(char) == 0x7F:
+            out.append("\\x{:02X}".format(ord(char)));
+        else:
+            out.append(char);
+    return ("".join(out));
 
 
 def _unescape(text: str) -> str:
@@ -128,16 +281,31 @@ def _unescape(text: str) -> str:
         code = text[index + 1];
         if code == "\\":
             out.append("\\");
-        elif code == "t":
+            index += 2;
+            continue;
+        if code == "t":
             out.append("\t");
-        elif code == "n":
+            index += 2;
+            continue;
+        if code == "n":
             out.append("\n");
-        elif code == "r":
+            index += 2;
+            continue;
+        if code == "r":
             out.append("\r");
-        else:
-            # Forward-compatible rule: an unknown escape keeps the slash.
-            out.append("\\");
-            out.append(code);
+            index += 2;
+            continue;
+        if code == "x" and index + 3 < len(text):
+            raw = text[index + 2:index + 4];
+            try:
+                out.append(chr(int(raw, 16)));
+                index += 4;
+                continue;
+            except ValueError:
+                pass;
+        # Forward-compatible rule: an unknown escape keeps the slash.
+        out.append("\\");
+        out.append(code);
         index += 2;
     return ("".join(out));
 
@@ -150,7 +318,12 @@ def _bool_field(value: str) -> bool:
     return (value == "1");
 
 
-def _serialize_value(value: object, column: SumColumn) -> str:
+def _serialize_value(
+    value: object,
+    column: SumColumn,
+    separator: str = DEFAULT_FIELD_SEPARATOR,
+    record_separator: str = DEFAULT_RECORD_SEPARATOR,
+) -> str:
     if value is None:
         return (NULL_TOKEN);
     logical = column.logical_type;
@@ -188,7 +361,7 @@ def _serialize_value(value: object, column: SumColumn) -> str:
             if isinstance(value, set):
                 value = sorted(value, key=repr);
             value = json.dumps(value, ensure_ascii=False, separators=(",", ":"));
-    return (_escape(value));
+    return (_escape(value, separator, record_separator));
 
 
 def _parse_value(token: str, column: SumColumn) -> object:
@@ -232,23 +405,36 @@ def _parse_value(token: str, column: SumColumn) -> object:
     return (text);
 
 
-def dumps(table: SumTable) -> str:
-    lines = [f"{MAGIC}\t{VERSION}"];
-    metadata = {
+def dumps(
+    table: SumTable,
+    separator: str = DEFAULT_FIELD_SEPARATOR,
+    record_separator: str = DEFAULT_RECORD_SEPARATOR,
+) -> str:
+    separator = normalize_separator(separator);
+    record_separator = normalize_record_separator(record_separator);
+    _validate_separator_pair(separator, record_separator);
+    records = [];
+    metadata = {str(key): str(value) for key, value in table.metadata.items()};
+    metadata.update({
         "schema": SUMTAB_FORMAT,
         "encoding": "UTF-8",
-        "separator": "TAB",
+        "separator": separator_name(separator),
+        "field_separator": separator_name(separator),
+        "record_separator": record_separator_name(record_separator),
         "null": NULL_TOKEN,
-    };
-    metadata.update({str(key): str(value) for key, value in table.metadata.items()});
+    });
     for key, value in metadata.items():
-        lines.append("META\t{}\t{}".format(_escape(key), _escape(value)));
+        records.append(separator.join((
+            "META",
+            _escape(key, separator, record_separator),
+            _escape(value, separator, record_separator),
+        )));
     for column in table.columns:
-        lines.append("\t".join((
+        records.append(separator.join((
             "FIELD",
-            _escape(column.name),
-            _escape(column.logical_type),
-            _escape(column.declared_type or column.logical_type),
+            _escape(column.name, separator, record_separator),
+            _escape(column.logical_type, separator, record_separator),
+            _escape(column.declared_type or column.logical_type, separator, record_separator),
             "" if column.length is None else str(column.length),
             "" if column.precision is None else str(column.precision),
             "" if column.scale is None else str(column.scale),
@@ -256,50 +442,87 @@ def dumps(table: SumTable) -> str:
             "1" if column.primary_key else "0",
             "1" if column.unique else "0",
             "1" if column.autoinum else "0",
-            "" if column.default is None else _escape(column.default),
-            "" if column.references is None else _escape(column.references),
+            "" if column.default is None else _escape(column.default, separator, record_separator),
+            "" if column.references is None else _escape(column.references, separator, record_separator),
         )));
     for index in table.indexes:
         fields = [
             "INDEX",
-            _escape(index.name),
+            _escape(index.name, separator, record_separator),
             "1" if index.unique else "0",
-            _escape(index.origin),
-            "" if index.expression is None else _escape(index.expression),
+            _escape(index.origin, separator, record_separator),
+            "" if index.expression is None else _escape(index.expression, separator, record_separator),
         ];
-        fields.extend(_escape(column) for column in index.columns);
-        lines.append("\t".join(fields));
-    lines.append("DATA");
+        fields.extend(_escape(column, separator, record_separator) for column in index.columns);
+        records.append(separator.join(fields));
+    records.append("DATA");
     for row in table.rows:
-        lines.append("\t".join(
-            _serialize_value(value, column)
+        records.append(separator.join(
+            _serialize_value(value, column, separator, record_separator)
             for value, column in zip(row, table.columns)
         ));
-    return ("\n".join(lines) + "\n");
+    return (_bootstrap(separator, record_separator) + record_separator.join(records) + record_separator);
 
 
-def loads(text: str) -> SumTable:
-    raw_lines = text.splitlines();
-    if not raw_lines:
+def loads(
+    text: str,
+    separator: str | None = None,
+    record_separator: str | None = None,
+) -> SumTable:
+    if not text:
         raise ValueError("Empty SUMTAB document.");
-    header = raw_lines[0].split("\t");
-    if len(header) != 2 or header[0] != MAGIC:
-        raise ValueError("Not a SUMTAB document.");
-    if header[1] != VERSION:
-        raise ValueError("Unsupported SUMTAB version: {}.".format(header[1]));
+    bootstrap = _parse_bootstrap(text);
+    if bootstrap is not None:
+        detected, detected_record_separator, payload = bootstrap;
+        records = payload.split(detected_record_separator);
+        if records and records[-1] == "":
+            records.pop();
+        first_record_number = 1;
+    else:
+        # Legacy SUMTAB/1: SUMTAB<FS>1 followed by LF-delimited records.
+        header, marker, payload = text.partition("\n");
+        if not marker:
+            raise ValueError("Not a SUMTAB document.");
+        detected = _separator_from_legacy_header(header);
+        detected_record_separator = "\n";
+        records = payload.split("\n");
+        if records and records[-1] == "":
+            records.pop();
+        first_record_number = 2;
+    if separator is None:
+        separator = detected;
+    else:
+        separator = normalize_separator(separator);
+        if separator != detected:
+            raise ValueError(
+                "SUMTAB separator mismatch: header uses {!r}, caller requested {!r}.".format(
+                    detected, separator
+                )
+            );
+    if record_separator is None:
+        record_separator = detected_record_separator;
+    else:
+        record_separator = normalize_record_separator(record_separator);
+        if record_separator != detected_record_separator:
+            raise ValueError(
+                "SUMTAB record separator mismatch: header uses {!r}, caller requested {!r}.".format(
+                    detected_record_separator, record_separator
+                )
+            );
+    _validate_separator_pair(separator, record_separator);
     columns = [];
     indexes = [];
     metadata = {};
     rows = [];
     in_data = False;
-    for line_number, line in enumerate(raw_lines[1:], start=2):
+    for line_number, line in enumerate(records, start=first_record_number):
         if not in_data:
             if line == "DATA":
                 in_data = True;
                 continue;
             if not line:
                 continue;
-            parts = line.split("\t");
+            parts = line.split(separator);
             kind = parts[0];
             if kind == "META":
                 if len(parts) != 3:
@@ -338,7 +561,7 @@ def loads(text: str) -> SumTable:
             raise ValueError("Unknown SUMTAB record {!r} at line {}.".format(kind, line_number));
         if not columns and line:
             raise ValueError("SUMTAB DATA section has no FIELD definitions.");
-        parts = line.split("\t");
+        parts = line.split(separator);
         if len(parts) != len(columns):
             raise ValueError(
                 "SUMTAB data row at line {} has {} fields; expected {}.".format(
@@ -348,25 +571,50 @@ def loads(text: str) -> SumTable:
         rows.append(tuple(_parse_value(token, column) for token, column in zip(parts, columns)));
     if not in_data:
         raise ValueError("SUMTAB document has no DATA section.");
+    metadata["separator"] = separator_name(separator);
+    metadata["field_separator"] = separator_name(separator);
+    metadata["record_separator"] = record_separator_name(record_separator);
     return (SumTable(columns=columns, rows=rows, indexes=indexes, metadata=metadata));
 
 
-def write_sumtab(table: SumTable, path: str | Path) -> Path:
+def write_sumtab(
+    table: SumTable,
+    path: str | Path,
+    separator: str = DEFAULT_FIELD_SEPARATOR,
+    record_separator: str = DEFAULT_RECORD_SEPARATOR,
+) -> Path:
     target = Path(path).expanduser().resolve();
     target.parent.mkdir(parents=True, exist_ok=True);
-    target.write_text(dumps(table), encoding="utf-8", newline="\n");
+    target.write_bytes(
+        dumps(table, separator=separator, record_separator=record_separator).encode("utf-8")
+    );
     return (target);
 
 
-def read_sumtab(path: str | Path) -> SumTable:
+def read_sumtab(
+    path: str | Path,
+    separator: str | None = None,
+    record_separator: str | None = None,
+) -> SumTable:
     source = Path(path).expanduser().resolve();
-    return (loads(source.read_text(encoding="utf-8")));
+    return (loads(
+        source.read_bytes().decode("utf-8"),
+        separator=separator,
+        record_separator=record_separator,
+    ));
 
 
 __all__ = [
     "MAGIC",
     "VERSION",
     "NULL_TOKEN",
+    "DEFAULT_FIELD_SEPARATOR",
+    "DEFAULT_RECORD_SEPARATOR",
+    "DEFAULT_SEPARATOR",
+    "normalize_separator",
+    "normalize_record_separator",
+    "separator_name",
+    "record_separator_name",
     "SumColumn",
     "SumIndex",
     "SumTable",

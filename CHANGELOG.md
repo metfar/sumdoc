@@ -1,6 +1,14 @@
 
 ## Unreleased
 
+### SUMTAB configurable separator
+
+- Make pipe (`|`) the default SUMTAB field separator for easier terminal inspection.
+- Add `tableconvert --separator` with named `pipe`, `tab`, `comma`, `semicolon`, and `colon` aliases plus any safe literal one-character separator.
+- Make the SUMTAB header self-describing (`SUMTAB|1`, `SUMTAB<TAB>1`, etc.), so readers detect the separator before parsing metadata.
+- Escape occurrences of the active separator as `\xHH`, preserving round-trip data without CSV-style quoting rules.
+- Continue reading the earlier tab-separated `SUMTAB<TAB>1` representation.
+
 ### SUMTAB/FST packaging completion
 
 - Requires `sumcore>=0.1.0a22`, the first sumCore revision containing the
@@ -166,3 +174,12 @@
 - Moved diagnostic messages to standard error for clean Unix pipelines.
 - Added optional dependency groups, tests, and GPLv2-or-later licensing.
 
+
+## 0.3.2.4 - 2026-10-17
+
+- SUMTAB framing now supports independently configurable one-byte field and record separators.
+- Added ASCII separator aliases including `US` (0x1F), `RS` (0x1E), `NUL`, `LF`, and `CR`; hexadecimal `0xNN` notation is accepted.
+- Added a fixed ASCII bootstrap header (`SUMTAB1 FS=.. RS=..`) so raw record separators can be detected without circular parsing.
+- Kept backward read compatibility with the earlier `SUMTAB<FS>1` + LF framing.
+- Added the read-only `tablequery` / `sumtabquery` / `stq` console with `list`, `show`, `describe`, and SQL `SELECT` support over SUMTAB catalogs.
+- First-level directories act as SQL schemas (for example `HR/DEPARTMENTS.sumtab` -> `HR.DEPARTMENTS`).

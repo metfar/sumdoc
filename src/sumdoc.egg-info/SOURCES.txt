@@ -3,6 +3,7 @@ COPYING
 LICENSE
 MANIFEST.in
 README.md
+SUMTAB.md
 pyproject.toml
 setup.cfg
 setup.py
@@ -39,6 +40,7 @@ src/sumdoc/tools/pdf2png.py
 src/sumdoc/tools/pdf2txt.py
 src/sumdoc/tools/png2text.py
 src/sumdoc/tools/tableconvert.py
+src/sumdoc/tools/tablequery.py
 src/sumdoc/tools/text2image.py
 tests/test_cli.py
 tests/test_clipboard.py
@@ -50,4 +52,5 @@ tests/test_lessrich.py
 tests/test_multicall.py
 tests/test_png2text.py
 tests/test_sumtab.py
+tests/test_tablequery.py
 tests/test_text2image.py

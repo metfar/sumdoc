@@ -2,7 +2,7 @@
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
-A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `text2image`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, `md2pdf`, or `tableconvert`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
+A single executable can behave as `image2text`, `image2ansi`, `image2braille`, `text2image`, `png2webp`, `webp2png`, `pdf2png`, `pdf2txt`, `png2text`, `clipinfo`, `clipbesttype`, `clip2md`, `clip2png`, `clip2rtf`, `md2html`, `html2md`, `md2pdf`, or `tableconvert` / `tablequery`, depending on the name used to invoke it. The design follows the same practical idea used by multicall programs such as BusyBox: one maintained core, many simple command names.
 
 No useful program should disappear on a beach of scattered grains. SumDoc ties those grains together so that the tools can be installed, documented, tested, shared, and improved as one project.
 
@@ -39,12 +39,16 @@ This keeps application code small.  A terminal, editor, IDE, BASIC environment, 
 
 ## SUMTAB native table format
 
-SUMTAB is the native SUM tabular interchange/cache format. It is a UTF-8, line-oriented format designed to preserve a portable schema and index definitions while remaining simple enough to implement directly in sumBASIC. Type and schema authority lives above individual language runtimes in `sumCore`; SumDoc owns the document codec and conversion tool.
+SUMTAB is the native SUM tabular interchange/cache format. It is UTF-8, preserves a portable schema and index definitions, and remains simple enough to implement directly in sumBASIC. Type and schema authority lives above individual language runtimes in `sumCore`; SumDoc owns the document codec, conversion tool, and lightweight query console.
+
+SUMTAB uses **pipe (`|`) fields and LF records by default** so tables remain easy to inspect in a terminal. A fixed bootstrap line such as `SUMTAB1 FS=7C RS=0A` declares both bytes before parsing begins. `--fs`/`--field-separator` and `--rs`/`--record-separator` accept named ASCII aliases such as `pipe`, `us`, `lf`, `rs`, and `nul`, or hexadecimal `0xNN`. Readers also accept the earlier `SUMTAB|1` framing.
 
 `tableconvert` converts supported formats through the common SUM table model:
 
 ```sh
 sumdoc tableconvert data.csv data.sumtab
+sumdoc tableconvert data.csv data-tabs.sumtab --fs tab
+sumdoc tableconvert data.csv data-raw.sumtab --fs us --rs rs
 sumdoc tableconvert data.sqlite data.sumtab --table customers
 sumdoc tableconvert data.sumtab data.sqlite --table customers
 sumdoc tableconvert legacy.dbf legacy.sumtab
@@ -55,7 +59,17 @@ When the output is omitted, a non-SUMTAB input is converted to a sibling `.sumta
 
 Conversions are cached under the XDG cache directory (normally `~/.cache/sumdoc/tableconvert`). If the source and conversion options have not changed, SumDoc reuses the existing result. If the source changes but the target still matches the previous cached product, the target is refreshed automatically. A target modified outside SumDoc is never silently overwritten; use `--force` deliberately.
 
-CSV/TSV, gzip-compressed CSV/TSV, SQLite and core DBF conversion use the Python standard library. Parquet is an optional backend loaded only when requested. RDS and FST are reserved for native backends and are intentionally not routed through Rscript.
+A directory can also be used as a SUMTAB catalog. First-level directories are schemas, so `HR/DEPARTMENTS.sumtab` is queried as `HR.DEPARTMENTS`:
+
+```bash
+sumdoc tablequery catalog
+# then: list / show HR / describe HR.LOCATIONS / select ...
+sumdoc tablequery catalog -e "select * from HR.DEPARTMENTS where MANAGER_ID > 200"
+```
+
+The query console is read-only and uses Python's standard-library SQLite engine in memory; SUMTAB remains the persistent storage format.
+
+CSV/TSV, gzip-compressed CSV/TSV, SQLite and core DBF conversion use the Python standard library. Parquet is an optional backend loaded only when requested. FST input uses the optional native `fstio` backend; RDS remains reserved for a future native backend. Neither format is routed through Rscript.
 
 ## Help database model
 
@@ -99,6 +113,7 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `html2md` | Convert HTML to Markdown. | `html2markdown` |
 | `md2pdf` | Convert Markdown or preformatted terminal text to PDF. | `md2pdfpipe`, `markdown2pdf` |
 | `tableconvert` | Convert SUMTAB, CSV/TSV, SQLite, DBF, and optional Parquet tables while preserving portable schema/index definitions. | `tableconv` |
+| `tablequery` | Query SUMTAB catalogs with read-only SQL plus `list`, `show`, and `describe`. | `sumtabquery`, `stq` |
 
 ## Installation
 
@@ -144,6 +159,7 @@ md2html         -> sumdoc
 html2md         -> sumdoc
 md2pdf          -> sumdoc
 tableconvert    -> sumdoc
+tablequery      -> sumdoc
 tableconv       -> sumdoc
 markdown2helpdb -> sumdoc
 md2helpdb       -> sumdoc

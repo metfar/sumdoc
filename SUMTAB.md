@@ -2,53 +2,132 @@
 
 SUMTAB is the native SUM tabular interchange and conversion-cache format.
 Its architecture contract is registered as `sumtab/1` by `sumCore`; the
-reference codec and conversion tool live in SumDoc. Individual languages such
-as sumX, sumBASIC, sum_R and sumPY consume the contract and are not authorities
-for it.
+reference codec and conversion/query tools live in SumDoc. Individual languages
+such as sumX, sumBASIC, sum_R and sumPY consume the contract and are not
+authorities for it.
 
 ## Design goals
 
-- UTF-8 and human-inspectable.
+- UTF-8 and human-inspectable by default.
 - Dependency-free core reader/writer.
 - Simple enough for a direct sumBASIC implementation.
 - Explicit schema rather than CSV-style type guessing.
 - Portable index **definitions**, not copies of backend index files.
-- Stream-friendly line-oriented data section.
+- Stream-friendly framing with independently selectable field and record bytes.
 - Extensible metadata whose unknown keys can be ignored.
+- A compact representation that can also become a raw ASCII-delimited stream.
+
+## Bootstrap and separators
+
+SUMTAB uses one fixed ASCII bootstrap line terminated by LF:
+
+```text
+SUMTAB1 FS=7C RS=0A
+```
+
+`FS` is the field-separator byte and `RS` is the record-separator byte, both in
+hexadecimal. The bootstrap is deliberately independent of either separator, so
+a reader can discover the framing before parsing the first SUMTAB record.
+
+The default is human-friendly:
+
+```text
+FS = 0x7C   |    PIPE
+RS = 0x0A   LF
+```
+
+so an ordinary file looks like:
+
+```text
+SUMTAB1 FS=7C RS=0A
+META|schema|sumtab/1
+META|encoding|UTF-8
+META|field_separator|PIPE
+META|record_separator|LF
+FIELD|id|INTEGER|INTEGER||||1|1|0|0||
+FIELD|name|VARCHAR|VARCHAR(40)|40|||1|0|0|0||
+DATA
+1|Ana
+2|Seba
+```
+
+For a raw ASCII stream, the historical ASCII control characters are especially
+convenient:
+
+```text
+FS = 0x1F   US   Unit Separator
+RS = 0x1E   RS   Record Separator
+```
+
+The payload then becomes conceptually:
+
+```text
+FIELD<US>...<RS>FIELD<US>...<RS>DATA<RS>1<US>Ana<RS>2<US>Seba<RS>
+```
+
+NUL can also be used as a record separator (`RS=00`), which is useful for Unix
+pipelines where embedded newlines must never terminate a record.
+
+SumDoc accepts aliases and hexadecimal byte notation:
+
+```bash
+sumdoc tableconvert data.csv data.sumtab --fs pipe --rs lf
+sumdoc tableconvert data.csv data.sumtab --fs us   --rs rs
+sumdoc tableconvert data.csv data.sumtab --fs 0x1f --rs 0x1e
+sumdoc tableconvert data.csv data.sumtab --fs pipe --rs nul
+```
+
+Useful aliases include `pipe`, `tab`, `comma`, `semicolon`, `colon`, `space`,
+`us`, `rs`, `lf`, `cr`, and `nul`. Separators must be single ASCII bytes
+(`0x00..0x7F`), must differ from each other, and backslash is reserved for the
+escape syntax.
+
+Readers remain compatible with the earlier SUMTAB/1 framing:
+
+```text
+SUMTAB|1
+...
+```
+
+which is interpreted as `FS=PIPE`, `RS=LF`.
 
 ## Record layout
 
-Every file starts with:
+After the bootstrap, schema records continue until `DATA`:
 
 ```text
-SUMTAB<TAB>1
+META<FS>key<FS>value<RS>
+FIELD<FS>name<FS>logical_type<FS>declared_type<FS>length<FS>precision<FS>scale<FS>nullable<FS>primary<FS>unique<FS>autoinum<FS>default<FS>references<RS>
+INDEX<FS>name<FS>unique<FS>origin<FS>expression<FS>column...<RS>
+DATA<RS>
 ```
 
-Schema records follow until `DATA`:
-
-```text
-META<TAB>key<TAB>value
-FIELD<TAB>name<TAB>logical_type<TAB>declared_type<TAB>length<TAB>precision<TAB>scale<TAB>nullable<TAB>primary<TAB>unique<TAB>autoinum<TAB>default<TAB>references
-INDEX<TAB>name<TAB>unique<TAB>origin<TAB>expression<TAB>column...
-DATA
-```
-
-After `DATA`, each physical line is one row and each field is separated by a
-literal tab character.
+Every data record after `DATA` contains exactly one field per declared column.
 
 ## Escaping and NULL
 
 The core escape set is deliberately small:
 
 ```text
-\\   backslash
-\t   tab
-\n   newline
-\r   carriage return
-\N   NULL, only when it is the complete unescaped field token
+\\      backslash
+\t      tab
+\n      newline
+\r      carriage return
+\xHH    control byte or active separator byte
+\N      NULL, only when it is the complete unescaped field token
 ```
 
-A literal string `\N` is therefore written as `\\N`.
+With the default pipe separator, a literal `|` is written as `\x7C`. With
+`RS=NUL`, a literal NUL inside a value is written as `\x00`. The active FS and
+RS bytes therefore never occur unescaped inside field contents, keeping a small
+reader simple:
+
+```text
+read until RS
+split record by FS
+unescape fields
+convert values according to schema
+```
 
 ## Types
 
@@ -67,9 +146,6 @@ Structured SUM values are registered above the languages as well:
 ARRAY LIST DICT SET TUPLE OBJECT
 ```
 
-A Core reader may support only the scalar subset and still preserve unknown
-schema/metadata for later processing.
-
 ## Index definitions
 
 `INDEX` records describe how an index can be regenerated by a destination
@@ -77,33 +153,68 @@ backend. SUMTAB does not embed native `.ndx`, `.idx`, `.cdx`, `.mdx` or SQLite
 B-tree pages. This keeps the interchange format independent of backend binary
 layouts.
 
-For example, SQLite import records user index names, uniqueness and columns (or
-an expression when available). SQLite export recreates those definitions.
-Legacy xBase companion files are detected by the current converter but their
-binary expression definitions are not decoded yet; their presence is recorded
-as source metadata rather than guessed.
+## SUMTAB catalogs and simple queries
+
+A directory can act as a SUMTAB catalog. Files in the root are unqualified
+SQL tables. First-level directories are schemas:
+
+```text
+catalog/
+  people.sumtab
+  HR/
+    LOCATIONS.sumtab
+    EMPLOYEES.sumtab
+    DEPARTMENTS.sumtab
+```
+
+The read-only query console is:
+
+```bash
+sumdoc tablequery catalog
+# aliases: sumtabquery, stq
+```
+
+It supports:
+
+```text
+list
+show HR
+describe HR.LOCATIONS
+select * from people
+select * from HR.DEPARTMENTS where MANAGER_ID > 200
+```
+
+SQL `SELECT` execution uses an in-memory SQLite engine from Python's standard
+library. SUMTAB remains the persistent storage format; only referenced tables
+are materialized for the current query. Mutating SQL is not accepted.
+
+One-shot execution is available with `-e`:
+
+```bash
+sumdoc tablequery catalog -e "select * from HR.DEPARTMENTS where MANAGER_ID > 200"
+```
 
 ## SQLite mapping
 
 SumDoc-created SQLite databases include a private `__sum_schema` metadata table
-so exact SUM logical declarations can be reconstructed. In particular,
-`NUMERIC(p,s)` values are stored as scaled integers while their logical type and
-scale remain explicit, avoiding binary floating-point loss. `LOGICAL` uses
-integer 0/1 storage. The metadata table is an implementation detail of the
-SQLite adapter, not part of the SUMTAB syntax.
+so exact SUM logical declarations can be reconstructed. `NUMERIC(p,s)` values
+are stored as scaled integers while their logical type and scale remain
+explicit. `LOGICAL` uses integer 0/1 storage.
 
 ## DBF profiles
 
 `tableconvert --profile` defaults to `auto`. The current writer selects the
 broadly compatible dBASE III record profile when the schema is representable.
-Future DBF/FoxPro profiles can extend the mapping without changing the command
-contract.
 
 ## Conversion cache
 
 `tableconvert` stores conversion metadata under the XDG cache directory
-(normally `~/.cache/sumdoc/tableconvert`). Source size/mtime and relevant
-companion files, target signature, formats and conversion options participate
-in cache validation. A target modified outside SumDoc is never silently
-replaced; a target still matching the previous generated product can be
-refreshed automatically when its source changes.
+(normally `~/.cache/sumdoc/tableconvert`). Both SUMTAB field and record
+separators participate in cache identity, so a raw `US/RS` representation and a
+human `PIPE/LF` representation cannot be accidentally confused.
+
+## Native FST input
+
+`tableconvert` can read R `fst` files without R through the optional `fstio`
+backend (`pip install sumdoc[fst]`). FST output remains read-only in this
+revision.

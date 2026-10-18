@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sumdoc"
-version = "0.3.2.2"
+version = "0.3.2.4"
 description = "Small Unix-style document conversion tools in one multicall command."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -83,6 +83,9 @@ md2pdfpipe = "sumdoc.cli:entry_point"
 markdown2pdf = "sumdoc.cli:entry_point"
 tableconvert = "sumdoc.cli:entry_point"
 tableconv = "sumdoc.cli:entry_point"
+tablequery = "sumdoc.cli:entry_point"
+sumtabquery = "sumdoc.cli:entry_point"
+stq = "sumdoc.cli:entry_point"
 
 [project.optional-dependencies]
 help = [

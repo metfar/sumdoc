@@ -203,6 +203,12 @@ TOOLS = (
         "Convert tabular documents through native SUMTAB, preserving portable schema/index definitions.",
         aliases=("tableconv",),
     ),
+    ToolSpec(
+        "tablequery",
+        "sumdoc.tools.tablequery",
+        "Query SUMTAB files with simple read-only SQL plus list/show/describe commands.",
+        aliases=("sumtabquery", "stq"),
+    ),
 );
 
 TOOL_BY_NAME = {};

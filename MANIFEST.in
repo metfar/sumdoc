@@ -2,5 +2,6 @@ include LICENSE
 include COPYING
 include README.md
 include CHANGELOG.md
+include SUMTAB.md
 recursive-include src/sumdoc/styles *.css
 recursive-include tests *.py

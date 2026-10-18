@@ -8,8 +8,8 @@ from decimal import Decimal;
 import sqlite3;
 
 from sumdoc.common import GlobalOptions;
-from sumdoc.sumtab import SumColumn, SumIndex, SumTable, dumps, loads, read_sumtab;
-from sumdoc.tools import tableconvert;
+from sumdoc.sumtab import SumColumn, SumIndex, SumTable, dumps, loads, read_sumtab, write_sumtab;
+from sumdoc.tools import tableconvert, tablequery;
 
 
 def sample_table():
@@ -23,7 +23,7 @@ def sample_table():
             SumColumn("note", "TEXT", "TEXT"),
         ],
         rows=[
-            (1, "Ana\tPérez", Decimal("12.3400"), True, date(2026, 10, 10), "line 1\nline 2"),
+            (1, "Ana\tPérez", Decimal("12.3400"), True, date(2026, 10, 10), "line 1 | line 2\nline 3"),
             (2, r"literal \N", None, False, None, ""),
         ],
         indexes=[SumIndex("idx_name", ("name",), unique=False)],
@@ -42,6 +42,79 @@ def test_sumtab_round_trip_preserves_schema_values_and_indexes():
     assert restored.indexes == table.indexes;
     assert restored.metadata["schema"] == "sumtab/1";
 
+
+
+def test_sumtab_defaults_to_pipe_and_escapes_pipe_values():
+    table = sample_table();
+    encoded = dumps(table);
+    assert encoded.startswith("SUMTAB1 FS=7C RS=0A\n");
+    assert "META|separator|PIPE" in encoded;
+    assert "META|record_separator|LF" in encoded;
+    assert "line 1 \\x7C line 2\\nline 3" in encoded;
+    restored = loads(encoded);
+    assert restored.rows == table.rows;
+    assert restored.metadata["separator"] == "PIPE";
+    assert restored.metadata["record_separator"] == "LF";
+
+
+def test_sumtab_supports_tab_and_custom_single_character_separators():
+    table = sample_table();
+    tab_text = dumps(table, separator="tab");
+    assert tab_text.startswith("SUMTAB1 FS=09 RS=0A\n");
+    assert loads(tab_text).rows == table.rows;
+
+    semi_text = dumps(table, separator=";");
+    assert semi_text.startswith("SUMTAB1 FS=3B RS=0A\n");
+    assert "META;separator;SEMICOLON" in semi_text;
+    assert loads(semi_text).rows == table.rows;
+
+
+def test_sumtab_supports_raw_us_rs_and_nul_record_separators():
+    table = sample_table();
+    raw_text = dumps(table, separator="us", record_separator="rs");
+    assert raw_text.startswith("SUMTAB1 FS=1F RS=1E\n");
+    assert "\x1f" in raw_text;
+    assert "\x1e" in raw_text;
+    assert loads(raw_text).rows == table.rows;
+
+    nul_text = dumps(table, separator="pipe", record_separator="nul");
+    assert nul_text.startswith("SUMTAB1 FS=7C RS=00\n");
+    assert "\x00" in nul_text;
+    assert loads(nul_text).rows == table.rows;
+
+
+def test_sumtab_reader_accepts_legacy_pipe_header():
+    current = dumps(sample_table());
+    payload = current.split("\n", 1)[1];
+    legacy = "SUMTAB|1\n" + payload;
+    restored = loads(legacy);
+    assert restored.rows == sample_table().rows;
+    assert restored.metadata["record_separator"] == "LF";
+
+
+def test_tableconvert_separator_parameter_changes_sumtab_output(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"));
+    source = tmp_path / "sample.csv";
+    source.write_text("id,name\n1,Ana\n", encoding="utf-8");
+    target = tmp_path / "sample.sumtab";
+    options = GlobalOptions(quiet=True);
+    assert tableconvert.main([str(source), str(target), "--separator", "tab"], options) == 0;
+    assert target.read_text(encoding="utf-8").startswith("SUMTAB1 FS=09 RS=0A\n");
+    assert read_sumtab(target).rows == [(1, "Ana")];
+
+
+def test_tableconvert_record_separator_parameter_changes_sumtab_output(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"));
+    source = tmp_path / "sample.csv";
+    source.write_text("id,name\n1,Ana\n", encoding="utf-8");
+    target = tmp_path / "sample.sumtab";
+    options = GlobalOptions(quiet=True);
+    assert tableconvert.main([
+        str(source), str(target), "--fs", "us", "--rs", "rs"
+    ], options) == 0;
+    encoded = target.read_bytes().decode("utf-8");
+    assert encoded.startswith("SUMTAB1 FS=1F RS=1E\n");
+    assert read_sumtab(target).rows == [(1, "Ana")];
 
 def test_sqlite_round_trip_regenerates_index_definition(tmp_path):
     table = sample_table();

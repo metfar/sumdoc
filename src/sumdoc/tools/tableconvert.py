@@ -44,7 +44,15 @@ except ModuleNotFoundError as exc:
         ) from exc;
     raise;
 from sumdoc.common import GlobalOptions, Reporter, ensure_parent, require_input_file;
-from sumdoc.sumtab import SumColumn, SumIndex, SumTable, read_sumtab, write_sumtab;
+from sumdoc.sumtab import (
+    SumColumn,
+    SumIndex,
+    SumTable,
+    normalize_record_separator,
+    normalize_separator,
+    read_sumtab,
+    write_sumtab,
+);
 
 
 FORMAT_SUFFIXES = {
@@ -95,6 +103,23 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--table", help="SQLite table to read/write when the database contains more than one table.");
     parser.add_argument("--profile", default="auto", help="Destination profile/dialect. Default: auto.");
     parser.add_argument("--encoding", default="auto", help="Text/DBF encoding. Default: auto.");
+    parser.add_argument(
+        "--separator", "--field-separator", "--fs",
+        dest="separator",
+        default="pipe",
+        help=(
+            "SUMTAB field separator: named alias, 0xNN, or one ASCII character. "
+            "Useful aliases include pipe, tab, comma, semicolon, us. Default: pipe."
+        ),
+    );
+    parser.add_argument(
+        "--record-separator", "--rs",
+        default="lf",
+        help=(
+            "SUMTAB record separator: named alias, 0xNN, or one ASCII character. "
+            "Useful aliases include lf, cr, nul, rs. Default: lf."
+        ),
+    );
     parser.add_argument("--no-cache", action="store_true", help="Disable SumDoc conversion-cache checks.");
     parser.add_argument("--list-formats", action="store_true", help="List currently implemented table formats.");
     return (parser);
@@ -917,7 +942,12 @@ def read_table(path: Path, fmt: str, args) -> SumTable:
 
 def write_table(table: SumTable, path: Path, fmt: str, args) -> None:
     if fmt == "sumtab":
-        write_sumtab(table, path);
+        write_sumtab(
+            table,
+            path,
+            separator=normalize_separator(args.separator),
+            record_separator=normalize_record_separator(args.record_separator),
+        );
         return;
     if fmt in ("csv", "csv.gz"):
         write_delimited(table, path, ",");
@@ -1045,6 +1075,11 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
         "table": args.table,
         "profile": args.profile,
         "encoding": args.encoding,
+        "separator": normalize_separator(args.separator) if target_format == "sumtab" else None,
+        "record_separator": (
+            normalize_record_separator(args.record_separator)
+            if target_format == "sumtab" else None
+        ),
     };
     source_paths = _source_paths(source, source_format);
     cache_file = _cache_path(source, target, cache_options);
