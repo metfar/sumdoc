@@ -52,5 +52,6 @@ tests/test_lessrich.py
 tests/test_multicall.py
 tests/test_png2text.py
 tests/test_sumtab.py
+tests/test_sumx_interchange.py
 tests/test_tablequery.py
 tests/test_text2image.py

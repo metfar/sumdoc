@@ -59,6 +59,7 @@ FORMAT_SUFFIXES = {
     ".sumtab": "sumtab",
     ".csv": "csv",
     ".tsv": "tsv",
+    ".sumx": "sumx",
     ".sqlite": "sqlite",
     ".sqlite3": "sqlite",
     ".db": "sqlite",
@@ -389,6 +390,16 @@ def _write_sum_schema(connection, table_name: str, columns: list[SumColumn]) -> 
 
 
 def read_sqlite(path: Path, table_name: str | None) -> SumTable:
+    from sumcore.sumx_interchange import is_sumx_database, load_table;
+    if is_sumx_database(path):
+        if not table_name:
+            with sqlite3.connect(path) as connection:
+                names = [row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '__sumx_%' AND name NOT LIKE 'sqlite_%'")];
+            if len(names) != 1:
+                raise ValueError("Native sumX database requires --table (unless exactly one user table exists).");
+            table_name = names[0];
+        return load_table(path, table_name);
     connection = sqlite3.connect(path);
     try:
         tables = _sqlite_tables(connection);
@@ -525,6 +536,14 @@ def _sqlite_value(value, column: SumColumn, sum_storage: bool = True):
 
 
 def write_sqlite(table: SumTable, path: Path, table_name: str | None) -> None:
+    from sumcore.sumx_interchange import is_sumx_database, import_table;
+    if is_sumx_database(path):
+        import tempfile;
+        with tempfile.TemporaryDirectory() as directory:
+            intermediate = Path(directory) / 'data.sumtab';
+            write_sumtab(table, intermediate);
+            import_table(path, table_name or table.metadata.get('table') or path.stem, intermediate);
+        return;
     ensure_parent(path);
     name = table_name or table.metadata.get("table") or path.stem;
     connection = sqlite3.connect(path);
@@ -927,6 +946,15 @@ def read_table(path: Path, fmt: str, args) -> SumTable:
         return (read_delimited(path, ",", args.encoding));
     if fmt in ("tsv", "tsv.gz"):
         return (read_delimited(path, "\t", args.encoding));
+    if fmt == "sumx":
+        from sumcore.sumx_interchange import load_table;
+        if not args.table:
+            with sqlite3.connect(path) as connection:
+                tables = _sqlite_tables(connection);
+            if len(tables) != 1:
+                raise ValueError("sumX file requires --table unless it contains exactly one user table.");
+            return load_table(path, tables[0]);
+        return load_table(path, args.table);
     if fmt == "sqlite":
         return (read_sqlite(path, args.table));
     if fmt == "dbf":
@@ -954,6 +982,14 @@ def write_table(table: SumTable, path: Path, fmt: str, args) -> None:
         return;
     if fmt in ("tsv", "tsv.gz"):
         write_delimited(table, path, "\t");
+        return;
+    if fmt == "sumx":
+        from sumcore.sumx_interchange import import_table;
+        import tempfile;
+        with tempfile.TemporaryDirectory() as directory:
+            intermediate = Path(directory) / 'data.sumtab';
+            write_sumtab(table, intermediate);
+            import_table(path, args.table or table.metadata.get('table') or path.stem, intermediate);
         return;
     if fmt == "sqlite":
         write_sqlite(table, path, args.table);
@@ -1050,6 +1086,7 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
         print("csv/csv.gz\tportable delimited text");
         print("tsv/tsv.gz\tportable tab-delimited text");
         print("sqlite/sqlite3/db\tSQLite database with schema/index definitions");
+        print("sumx\tnative sumX SQLite database with sumX metadata");
         print("dbf\tdBASE-compatible table; destination profile defaults to auto");
         print("parquet\toptional pandas/Parquet backend");
         print("rds\treserved native backend (not implemented in this revision)");

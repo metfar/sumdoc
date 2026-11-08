@@ -1,3 +1,9 @@
+## 0.3.2.4 — Integración SUMTAB/sumX (2026-11-08)
+
+- `tableconvert` admite entrada y salida `.sumx` y reconoce metadatos sumX en SQLite existente.
+- Comparte el códec SUMTAB con `sumcore.sumtab` y conserva `sumdoc.sumtab` para compatibilidad.
+- La escritura de una base `.sqlite` nueva sigue usando SQLite genérico, no el esquema nativo sumX.
+
 
 ## Unreleased
 
