@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 import shutil;
 from pathlib import Path;
 
@@ -138,7 +139,7 @@ def extract_text(image_path: Path, language: str, mode: str, psm: int | None,
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="png2text",
         description="Extract Markdown text, code, or tables from an image using local OCR.",
     );

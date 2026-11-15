@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from io import BytesIO;
 from pathlib import Path;
 
@@ -47,7 +48,7 @@ def _active_backend():
 
 
 def clipinfo_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(prog="clipinfo", description="Show clipboard backend and advertised formats.");
+    parser = SumArgumentParser(prog="clipinfo", description="Show clipboard backend and advertised formats.");
     parser.parse_args(arguments);
     backend = _active_backend();
     types = available_types(backend);
@@ -72,7 +73,7 @@ def clipinfo_main(arguments: list[str] | None, options: GlobalOptions) -> int:
 
 
 def clipbesttype_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(prog="clipbesttype", description="Select the richest compatible clipboard type.");
+    parser = SumArgumentParser(prog="clipbesttype", description="Select the richest compatible clipboard type.");
     parser.add_argument("--kind", choices=("any", "text", "document", "image"), default="any");
     args = parser.parse_args(arguments);
     backend = _active_backend();
@@ -84,7 +85,7 @@ def clipbesttype_main(arguments: list[str] | None, options: GlobalOptions) -> in
 
 
 def clip2md_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(prog="clip2md", description="Convert the richest textual clipboard representation to Markdown.");
+    parser = SumArgumentParser(prog="clip2md", description="Convert the richest textual clipboard representation to Markdown.");
     parser.add_argument("filename", nargs="?", help="Compatibility output filename; -o/--output is preferred.");
     args = parser.parse_args(arguments);
     content = read_best("text", _active_backend());
@@ -112,7 +113,7 @@ def _image_to_png(data: bytes, mime_type: str) -> bytes:
 
 
 def clip2png_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(prog="clip2png", description="Save the richest clipboard image representation as PNG.");
+    parser = SumArgumentParser(prog="clip2png", description="Save the richest clipboard image representation as PNG.");
     parser.add_argument("filename", nargs="?", help="Compatibility output filename; .png is added when omitted.");
     args = parser.parse_args(arguments);
     content = read_best("image", _active_backend());
@@ -142,7 +143,7 @@ def _preferred_types_for_suffix(suffix: str) -> tuple[str, ...]:
 
 
 def clip2rtf_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="clip2rtf",
         description="Compatibility clipboard saver for RTF/HTML/text; output extension selects the representation.",
     );

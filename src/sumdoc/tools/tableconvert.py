@@ -23,6 +23,7 @@
 """Convert tabular documents through SUMTAB's common table/schema model.""";
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 import csv;
 from datetime import date, datetime;
 from decimal import Decimal, InvalidOperation;
@@ -95,7 +96,7 @@ DBF_PROFILES = {
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="tableconvert",
         description="Convert tabular files using SUMTAB as the native SUM table/schema model.",
     );

@@ -32,6 +32,7 @@ in-memory SQLite database for the duration of the command.
 """;
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from datetime import date, datetime, time;
 from decimal import Decimal;
 from pathlib import Path;
@@ -48,7 +49,7 @@ _SELECT_TABLE_RE = re.compile(
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="tablequery",
         description="Run simple read-only SQL queries against SUMTAB files.",
     );

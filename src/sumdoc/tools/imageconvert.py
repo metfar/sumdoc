@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 
 from sumdoc.common import GlobalOptions, Reporter, check_writable, require_input_file;
@@ -43,7 +44,7 @@ def import_image_module():
 
 def create_parser(tool_name: str) -> argparse.ArgumentParser:
     source_suffixes, target_suffix, _format = FORMATS[tool_name];
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog=tool_name,
         description=f"Convert {source_suffixes[0].upper()[1:]} images to {target_suffix.upper()[1:]}." ,
     );

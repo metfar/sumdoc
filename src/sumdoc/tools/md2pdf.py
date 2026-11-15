@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 
 from sumdoc.common import GlobalOptions, Reporter, read_text_input, resolve_single_output, write_binary_output;
@@ -40,7 +41,7 @@ def import_weasyprint():
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="md2pdf", description="Convert Markdown or terminal text to PDF.");
+    parser = SumArgumentParser(prog="md2pdf", description="Convert Markdown or terminal text to PDF.");
     parser.add_argument("input", nargs="?", default="-", help="Markdown input file, or - for stdin. Default: stdin.");
     parser.add_argument("--name", help="Base output name when stdin is combined with --output-dir.");
     parser.add_argument("--title", help="Document title. Default: the input filename stem or Document.");

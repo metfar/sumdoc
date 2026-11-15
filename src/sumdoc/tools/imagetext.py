@@ -26,6 +26,7 @@
 """Render raster images as ASCII, ANSI half blocks, or Unicode Braille.""";
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 import math;
 
@@ -151,7 +152,7 @@ def import_image_modules():
 
 
 def create_common_parser(prog: str, description: str) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog=prog, description=description);
+    parser = SumArgumentParser(prog=prog, description=description);
     parser.add_argument("inputs", nargs="+", help="Input image file or non-recursive directory.");
     parser.add_argument("-w", "--width", type=int, default=80, metavar="COLUMNS",
                         help="Image width in terminal columns. Default: 80.");

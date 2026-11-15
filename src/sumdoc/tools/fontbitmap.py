@@ -42,6 +42,7 @@ Unicode maps without changing the bitmap editor model.
 """;
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from dataclasses import dataclass;
 from pathlib import Path;
 import struct;
@@ -194,7 +195,7 @@ def _font2fnt_output(input_path: Path, options: GlobalOptions) -> Path | None:
 
 
 def font2fnt_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="font2fnt",
         description="Rasterize a TTF/OTF font into the compact SUM-FNT bitmap format.",
     );
@@ -259,7 +260,7 @@ def render_banner(text: str, font: BitmapFont, on: str = "█", off: str = " ",
 
 
 def banner_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="sumdoc banner",
         description="Render text banners using a SUM-FNT bitmap font.",
     );

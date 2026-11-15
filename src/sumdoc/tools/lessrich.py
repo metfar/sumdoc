@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 import re;
 import sys;
@@ -174,7 +175,7 @@ def _read_inputs(inputs: list[str], encoding: str) -> str:
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="lessrich",
         description="Read Markdown as rich terminal text.",
     );

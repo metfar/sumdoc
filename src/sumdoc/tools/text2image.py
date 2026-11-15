@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from io import BytesIO;
 from pathlib import Path;
 import os;
@@ -141,7 +142,7 @@ def _write_png(data: bytes, path: Path | None, options: GlobalOptions, private: 
 
 
 def text2image_main(arguments: list[str] | None, options: GlobalOptions) -> int:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="text2image",
         description="Render text as PNG. Prefer stdin or --clipboard for passwords/secrets.",
     );

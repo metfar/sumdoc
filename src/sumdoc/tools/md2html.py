@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from html import escape;
 from pathlib import Path;
 import re;
@@ -227,7 +228,7 @@ def build_document(markdown_text: str, title: str, css_text: str, fragment: bool
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="md2html", description="Convert Markdown or terminal text to HTML.");
+    parser = SumArgumentParser(prog="md2html", description="Convert Markdown or terminal text to HTML.");
     parser.add_argument("input", nargs="?", default="-", help="Markdown input file, or - for stdin. Default: stdin.");
     parser.add_argument("--name", help="Base output name when stdin is combined with --output-dir.");
     parser.add_argument("--title", help="HTML document title. Default: the input filename stem or Document.");

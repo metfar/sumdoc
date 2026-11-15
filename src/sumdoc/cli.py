@@ -27,6 +27,7 @@ import argparse;
 from pathlib import Path;
 import sys;
 
+from sumui.cli import SumArgumentParser;
 from sumdoc import __version__;
 from sumdoc.common import GlobalOptions, safe_symlink;
 from sumdoc.registry import TOOLS, all_invocation_names, resolve_tool;
@@ -48,54 +49,35 @@ def _take_value(arguments: list[str], index: int, option: str) -> tuple[str, int
     return (arguments[index + 1], index + 2);
 
 
+def build_global_parser() -> SumArgumentParser:
+    """Shared SUM front parser; actual tool parsers are separate instances.""";
+    parser = SumArgumentParser(prog="sumdoc", add_help=False, auto_version=False, allow_abbrev=False);
+    parser.add_argument("-t", "--tool", default=None);
+    parser.add_argument("-o", "--output", default=None);
+    parser.add_argument("-d", "--output-dir", "--outputdir", default=None);
+    parser.add_argument("-f", "--force", "--overwrite", action="store_true");
+    parser.add_argument("-q", "--quiet", action="store_true");
+    parser.add_argument("-v", "--verbose", action="count", default=0);
+    return parser;
+
+
 def extract_global_options(arguments: list[str]) -> tuple[str | None, GlobalOptions, list[str]]:
-    tool_name = None;
+    # Preserve literal tokens after --, which belong to the selected tool.
+    arguments = list(arguments);
+    if "--" in arguments:
+        split = arguments.index("--");
+        before, after = arguments[:split], arguments[split:];
+    else:
+        before, after = arguments, [];
+    parsed, remaining = build_global_parser().parse_known_args(before);
     options = GlobalOptions();
-    remaining = [];
-    index = 0;
-    scanning = True;
-    while index < len(arguments):
-        argument = arguments[index];
-        if argument == "--":
-            remaining.extend(arguments[index:]);
-            break;
-        if scanning and argument in ("-t", "--tool"):
-            tool_name, index = _take_value(arguments, index, argument);
-            continue;
-        if scanning and argument.startswith("--tool="):
-            tool_name = argument.split("=", 1)[1];
-            index += 1;
-            continue;
-        if scanning and argument in ("-o", "--output"):
-            options.output, index = _take_value(arguments, index, argument);
-            continue;
-        if scanning and argument.startswith("--output="):
-            options.output = argument.split("=", 1)[1];
-            index += 1;
-            continue;
-        if scanning and argument in ("-d", "--output-dir", "--outputdir"):
-            options.output_dir, index = _take_value(arguments, index, argument);
-            continue;
-        if scanning and (argument.startswith("--output-dir=") or argument.startswith("--outputdir=")):
-            options.output_dir = argument.split("=", 1)[1];
-            index += 1;
-            continue;
-        if scanning and argument in ("-f", "--force", "--overwrite"):
-            options.force = True;
-            index += 1;
-            continue;
-        if scanning and argument in ("-q", "--quiet"):
-            options.quiet = True;
-            index += 1;
-            continue;
-        if scanning and argument in ("-v", "--verbose"):
-            options.verbose += 1;
-            index += 1;
-            continue;
-        remaining.append(argument);
-        index += 1;
+    options.output = parsed.output;
+    options.output_dir = parsed.output_dir;
+    options.force = parsed.force;
+    options.quiet = parsed.quiet;
+    options.verbose = parsed.verbose;
     options.validate();
-    return (tool_name, options, remaining);
+    return (parsed.tool, options, remaining + after);
 
 
 def select_tool(explicit_name: str | None, argv0: str,
@@ -134,6 +116,11 @@ def show_general_help(file=sys.stdout) -> None:
     print("      --remove-links DIR   Remove SumDoc symbolic links.", file=file);
     print("      --version            Show the SumDoc version.", file=file);
     print("  -h, --help               Show this help or the selected tool help.", file=file);
+    print("", file=file);
+    print("Examples:", file=file);
+    print("  sumdoc --list-tools", file=file);
+    print("  sumdoc image2text image.png -o image.txt", file=file);
+    print("  image2text --help", file=file);
     print("", file=file);
     print("Tools:", file=file);
     for tool in TOOLS:

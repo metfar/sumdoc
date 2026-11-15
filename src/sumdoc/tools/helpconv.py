@@ -26,6 +26,7 @@
 """Convert editable Sum help Markdown to and from versioned ``.helpdb``.""";
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 import sys;
 
@@ -76,7 +77,7 @@ def _write_text(text: str, output_path: Path | None, options: GlobalOptions,
 
 
 def create_markdown2helpdb_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="markdown2helpdb",
         description="Compile editable Markdown help to a versioned .helpdb JSON file.",
     );
@@ -88,7 +89,7 @@ def create_markdown2helpdb_parser() -> argparse.ArgumentParser:
 
 
 def create_helpdb2markdown_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="helpdb2markdown",
         description="Reconstruct editable Markdown from a versioned .helpdb JSON file.",
     );

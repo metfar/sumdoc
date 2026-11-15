@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from io import BytesIO;
 import logging;
 from pathlib import Path;
@@ -70,7 +71,7 @@ def parse_pages(specification: str | None) -> set[int] | None:
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="pdf2txt",
         description="Extract text, HTML, XML, or tagged output from PDF files using pdfminer.six.",
     );

@@ -1,4 +1,4 @@
-# SumDoc 0.3.2.4
+# SumDoc 0.3.2.5
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -632,3 +632,5 @@ For **Paste Special → ASCII art**, SumDoc uses ordinary printable ASCII (` .:-
 ## Integración experimental con sumX
 
 `tableconvert` admite la extensión `.sumx` como SQLite nativo de sumX con metadatos de columnas. Ejemplo: `sumdoc tableconvert datos.sumtab datos.sumx --table datos`. Para exportar: `sumdoc tableconvert datos.sumx datos.sumtab --table datos`. Requiere sumX instalado para crear/importar tablas nativas. Consultar `README_INTEGRACION.md` del paquete de integración para limitaciones.
+
+<p align=center><b>- oOo -</b></p>

@@ -27,12 +27,13 @@
 
 import argparse;
 
+from sumui.cli import SumArgumentParser;
 from sumdoc.common import GlobalOptions;
 from sumdoc.helpview import load_help_source;
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="sumdoc help",
         description="Explore Markdown, .helpdb, or a Markdown directory with the SUM HelpBrowser.",
     );

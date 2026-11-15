@@ -25,6 +25,7 @@
 
 import argparse;
 
+from sumui.cli import SumArgumentParser;
 from sumdoc.common import GlobalOptions, Reporter, read_text_input, resolve_single_output, write_text_output;
 
 
@@ -49,7 +50,7 @@ def html_to_markdown(html_text: str, heading_style: str = "ATX", bullets: str = 
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="html2md", description="Convert HTML to Markdown.");
+    parser = SumArgumentParser(prog="html2md", description="Convert HTML to Markdown.");
     parser.add_argument("input", nargs="?", default="-", help="HTML input file, or - for stdin. Default: stdin.");
     parser.add_argument("--name", help="Base output name when stdin is combined with --output-dir.");
     parser.add_argument(

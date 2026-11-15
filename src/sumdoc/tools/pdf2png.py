@@ -24,6 +24,7 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 import sys;
 
@@ -94,7 +95,7 @@ def render_page(page, dpi: int):
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = SumArgumentParser(
         prog="pdf2png",
         description="Render selected PDF pages as individual 300 or 600 DPI PNG files.",
     );
