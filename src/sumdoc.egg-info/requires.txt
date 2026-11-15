@@ -1,4 +1,4 @@
-sumui>=0.1.0a21
+sumui>=0.1.0a22
 sumcore>=0.1.0a22
 Markdown>=3.5
 markdownify>=0.11

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sumdoc
-Version: 0.3.2.5
+Version: 0.3.2.6
 Summary: Small Unix-style document conversion tools in one multicall command.
 Author-email: William Martinez Bas <metfar@gmail.com>
 License-Expression: GPL-2.0-or-later
@@ -18,7 +18,7 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE
 License-File: COPYING
-Requires-Dist: sumui>=0.1.0a21
+Requires-Dist: sumui>=0.1.0a22
 Requires-Dist: sumcore>=0.1.0a22
 Requires-Dist: Markdown>=3.5
 Requires-Dist: markdownify>=0.11
@@ -60,7 +60,7 @@ Requires-Dist: build>=1.2; extra == "dev"
 Requires-Dist: pytest>=8; extra == "dev"
 Dynamic: license-file
 
-# SumDoc 0.3.2.5
+# SumDoc 0.3.2.6
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 

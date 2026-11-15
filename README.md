@@ -1,4 +1,4 @@
-# SumDoc 0.3.2.5
+# SumDoc 0.3.2.6
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
