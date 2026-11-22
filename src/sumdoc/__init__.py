@@ -25,6 +25,6 @@
 
 """SumDoc: small Unix-style document conversion tools.""";
 
-__version__ = "0.3.2.7";
+__version__ = "0.3.2.8";
 
 from .sumtab import SumColumn, SumIndex, SumTable, read_sumtab, write_sumtab;

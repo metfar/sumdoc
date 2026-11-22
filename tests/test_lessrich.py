@@ -68,3 +68,24 @@ def test_lessrich_writes_output_file(tmp_path):
     );
     assert result == 0;
     assert "SumDoc" in target.read_text(encoding="utf-8");
+
+
+def test_lessrich_renders_sumdoc_end_marker_centered():
+    width = 41;
+    target = StringIO();
+    console = Console(file=target, width=width, color_system=None, force_terminal=False);
+    lessrich.render_markdown(console, "# Prueba\n\n<p align=center><b>- oOo -</b></p>\n");
+    lines = target.getvalue().splitlines();
+    marker = next(line for line in lines if '*- oOo -*' in line);
+    assert marker.strip() == '*- oOo -*';
+    assert len(marker) == width;
+    assert marker.index('*- oOo -*') in (15, 16);
+    assert '<p' not in target.getvalue();
+
+
+def test_lessrich_does_not_transform_marker_inside_code_fence():
+    target = StringIO();
+    console = Console(file=target, width=60, color_system=None, force_terminal=False);
+    lessrich.render_markdown(console, "```html\n<p align=center><b>- oOo -</b></p>\n```\n");
+    assert '*- oOo -*' not in target.getvalue();
+    assert '<p align=center>' in target.getvalue();

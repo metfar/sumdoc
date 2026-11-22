@@ -174,6 +174,11 @@ TOOLS = (
         entry_point="clip2rtf_main",
     ),
     ToolSpec(
+        "lessans",
+        "sumdoc.tools.lessans",
+        "Scroll through ANSI SGR/true-color text with search and navigation.",
+    ),
+    ToolSpec(
         "md2rich",
         "sumdoc.tools.lessrich",
         "Render Markdown as rich terminal text.",

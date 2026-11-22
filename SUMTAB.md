@@ -220,5 +220,3 @@ backend (`pip install sumdoc[fst]`). FST output remains read-only in this
 revision.
 
 <p align=center><b>- oOo -</b></p>
-
-

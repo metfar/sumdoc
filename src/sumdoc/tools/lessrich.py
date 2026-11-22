@@ -24,6 +24,8 @@
 #warnings.filterwarnings("ignore", category=UserWarning);
 
 import argparse;
+import io;
+import shutil;
 from sumui.cli import SumArgumentParser;
 from pathlib import Path;
 import re;
@@ -33,6 +35,7 @@ from sumdoc.common import GlobalOptions, Reporter, check_writable;
 
 
 _TABLE_DIVIDER_CELL = re.compile(r"^\s*:?-{3,}:?\s*$");
+_SUM_DOC_END_MARKER = re.compile(r"^\s*<p\s+align\s*=\s*[\'\"]?center[\'\"]?\s*>\s*<b>\s*- oOo -\s*</b>\s*</p>\s*$", re.IGNORECASE);
 
 
 def import_rich():
@@ -126,6 +129,7 @@ def render_markdown(console, text: str) -> None:
     lines = text.splitlines();
     buffer = [];
     index = 0;
+    fenced = None;
 
     def flush_buffer() -> None:
         if not buffer:
@@ -134,7 +138,22 @@ def render_markdown(console, text: str) -> None:
         buffer.clear();
 
     while index < len(lines):
-        if index + 1 < len(lines):
+        line = lines[index];
+        fence = re.match(r"^\s{0,3}(`{3,}|~{3,})", line);
+        if fence:
+            symbol = fence.group(1)[0];
+            count = len(fence.group(1));
+            if fenced is None:
+                fenced = (symbol, count);
+            elif symbol == fenced[0] and count >= fenced[1]:
+                fenced = None;
+        if fenced is None and not fence and _SUM_DOC_END_MARKER.fullmatch(line):
+            flush_buffer();
+            from rich.text import Text;
+            console.print(Text("*- oOo -*", style="italic"), justify="center");
+            index += 1;
+            continue;
+        if fenced is None and index + 1 < len(lines):
             headers = _split_table_row(lines[index]);
             if len(headers) > 1 and _is_divider_row(lines[index + 1], len(headers)):
                 flush_buffer();
@@ -183,6 +202,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--width", type=int, help="Rendering width in terminal columns.");
     parser.add_argument("--no-color", action="store_true", help="Disable ANSI colors and styles.");
     parser.add_argument("--encoding", default="utf-8", help="Text encoding. Default: utf-8.");
+    parser.add_argument("--pager", action="store_true", help="Use the interactive scrolling pager (requires a terminal).");
+    parser.add_argument("--no-pager", action="store_true", help="Print rendered Markdown without opening the interactive pager.");
     return (parser);
 
 
@@ -191,6 +212,30 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
     reporter = Reporter(options);
     _box, Console, _Markdown, _Table = import_rich();
     source = _read_inputs(args.input, args.encoding);
+    if args.pager and args.no_pager:
+        raise ValueError("--pager and --no-pager are mutually exclusive.");
+    if options.output_dir is not None:
+        raise ValueError("lessrich/md2rich does not support --output-dir; use --output for one rendered stream.");
+    interactive = bool(sys.stdin.isatty() and sys.stdout.isatty());
+    pager = args.pager or (interactive and not args.no_pager and options.output in (None, "-"));
+    if pager:
+        if not interactive:
+            raise ValueError("Interactive scrolling requires stdin and stdout attached to a terminal.");
+        if options.output not in (None, "-"):
+            raise ValueError("--pager cannot be combined with file output.");
+        from sumdoc.tools.ansiview import parse_ansi, run_viewer;
+        target = io.StringIO();
+        columns = shutil.get_terminal_size((80, 24)).columns;
+        console = Console(
+            file=target,
+            width=args.width or max(20, columns - 1),
+            color_system=None if args.no_color else "truecolor",
+            force_terminal=not args.no_color,
+        );
+        render_markdown(console, source);
+        title = ", ".join(args.input) if args.input and args.input != ["-"] else "<stdin>";
+        run_viewer(parse_ansi(target.getvalue()), title, no_color=args.no_color);
+        return (0);
     output_handle = None;
     try:
         if options.output not in (None, "-"):

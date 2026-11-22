@@ -1,3 +1,13 @@
+## 0.3.2.8 — lessans y lessrich interactivo (2026-11-22)
+
+- Se integra `lessans` como herramienta SUMDOC multicall, con lanzador propio y registro de enlaces simbólicos.
+- Se comparte el motor `ansiview` para navegación vertical/horizontal, Page Up/Down, búsqueda `/` y `n`/`N`, y colores ANSI SGR (16, 256 y RGB verdadero).
+- `lessrich` / `md2rich` utiliza el visor interactivo para Markdown cuando stdin y stdout son TTY; `--pager` y `--no-pager` permiten seleccionar el comportamiento.
+- Se conservan la salida tradicional de Markdown en redirecciones y los espacios finales coloreados en capturas ANSI de `png2text --visual --color`.
+- `lessans --plain` produce texto sin secuencias ANSI; sin paginador se preserva el contenido para pipelines.
+- Se agregan pruebas de CLI, colores, navegación compartida e interoperabilidad, sin cambiar SUMTAB ni la representación OCR existente.
+- `lessrich` presenta el marcador de cierre SUMDOC como `*- oOo -*` centrado; conserva el HTML fuente y no altera los bloques de código.
+
 ## 0.3.2.7 — Reconstrucción visual OCR y color ANSI (2026-11-22)
 
 - `png2text` y su alias `png2md` incorporan `--visual` y `--color` combinables.
@@ -198,3 +208,5 @@
 - Kept backward read compatibility with the earlier `SUMTAB<FS>1` + LF framing.
 - Added the read-only `tablequery` / `sumtabquery` / `stq` console with `list`, `show`, `describe`, and SQL `SELECT` support over SUMTAB catalogs.
 - First-level directories act as SQL schemas (for example `HR/DEPARTMENTS.sumtab` -> `HR.DEPARTMENTS`).
+
+<p align=center><b>- oOo -</b></p>

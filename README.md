@@ -1,4 +1,4 @@
-# SumDoc 0.3.2.7
+# SumDoc 0.3.2.8
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -101,6 +101,8 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `pdf2png` | Render PDF pages as 300 or 600 DPI PNG files. | — |
 | `pdf2txt` | Extract text, HTML, XML, or tagged data from PDF files. | `pdf2text` |
 | `png2text` | Extract Markdown text, code, or tables from images using OCR. | `png2md`, `image2md` |
+| `lessans` | Browse ANSI/true-color text with scrolling and searching. | — |
+| `md2rich` | Render Markdown with Rich, including interactive scrolling on a terminal. | `lessrich`, `markdown2rich` |
 | `markdown2helpdb` | Compile editable Markdown into a versioned SUM help database. | `md2helpdb` |
 | `helpdb2markdown` | Reconstruct editable Markdown from a SUM help database. | `helpdb2md` |
 | `clipinfo` | Show the active clipboard backend and advertised MIME/TARGET formats. | `clipboard-info` |
@@ -114,6 +116,30 @@ SumDoc is free software released under the GNU General Public License, version 2
 | `md2pdf` | Convert Markdown or preformatted terminal text to PDF. | `md2pdfpipe`, `markdown2pdf` |
 | `tableconvert` | Convert SUMTAB, CSV/TSV, SQLite, DBF, and optional Parquet tables while preserving portable schema/index definitions. | `tableconv` |
 | `tablequery` | Query SUMTAB catalogs with read-only SQL plus `list`, `show`, and `describe`. | `sumtabquery`, `stq` |
+
+## Interactive terminal viewers (0.3.2.8)
+
+Two terminal viewers now share the ANSI SGR-aware scrolling engine:
+
+- `lessans` displays ANSI-colored text, including RGB foreground/background and colored trailing spaces from `png2text --visual --color`. It understands SGR formatting, not arbitrary terminal-control operations.
+- `lessrich` (`md2rich`, `markdown2rich`) renders Markdown with Rich and enters the same interactive pager when stdin and stdout are terminals. Markdown headings and tables are rendered before paging.
+
+```bash
+png2text screenshot.png --visual --color --width 120 -o screenshot.ans
+lessans screenshot.ans
+lessrich README.md
+lessrich README.md --width 120
+lessrich README.md --no-pager
+lessans screenshot.ans --plain > screenshot.txt
+```
+
+The conventional SUM document footer `<p align=center><b>- oOo -</b></p>` is presented by `lessrich` as a centered `*- oOo -*` line, without rewriting the source Markdown. Inside fenced code blocks it is treated as ordinary code.
+
+Inside either pager use `j/k` or arrows to scroll vertically, PageUp/PageDown or `b`/space to change pages, `h/l` or left/right arrows to scroll horizontally, `g/G` to jump to beginning/end, `/` to search, `n/N` for subsequent/previous matches and `q` to exit. The terminal alternate screen is restored upon exit.
+
+For ordinary pipes or redirection, `lessrich` retains its previous non-interactive output; `lessans` streams the original ANSI data unless `--plain` or `--no-color` is given. `lessans --pager` requests an interactive TTY explicitly; `--no-pager` disables automatic paging. A terminal is required for interactive mode.
+
+The initial Rich Markdown layout is sized when opening the document; terminal resize changes the visible viewport but does not reflow already-rendered Markdown. The viewer deliberately ignores terminal control sequences other than safe SGR formatting.
 
 ## Installation
 
@@ -653,7 +679,4 @@ The reconstructed layout is approximate; OCR may still miss or misidentify text.
 When saving use `.ans` for ANSI output and `.txt` for monochrome output.
 The `png2md` alias uses the same tool and options.
 
-
 <p align=center><b>- oOo -</b></p>
-
-
