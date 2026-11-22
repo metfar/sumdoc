@@ -1,4 +1,4 @@
-# SumDoc 0.3.2.6
+# SumDoc 0.3.2.7
 
 SumDoc is a collection of small document-conversion tools joined into one Unix-style multicall program.
 
@@ -613,7 +613,6 @@ The `sumdoc help` command now proves the live-Markdown side of this model.  Appl
 
 The long-term principle is simple: documentation should be written once and then **read, searched, published, converted, or explored as help** through SumDoc.
 
-<p align=center><b>- oOo -<b></p>
 
 ## Paste Special representations
 
@@ -633,4 +632,28 @@ For **Paste Special → ASCII art**, SumDoc uses ordinary printable ASCII (` .:-
 
 `tableconvert` admite la extensión `.sumx` como SQLite nativo de sumX con metadatos de columnas. Ejemplo: `sumdoc tableconvert datos.sumtab datos.sumx --table datos`. Para exportar: `sumdoc tableconvert datos.sumx datos.sumtab --table datos`. Requiere sumX instalado para crear/importar tablas nativas. Consultar `README_INTEGRACION.md` del paquete de integración para limitaciones.
 
+### OCR terminal reconstruction (`png2text` / `png2md`)
+
+The existing OCR/Markdown mode is unchanged. For screenshot-to-terminal reconstruction:
+
+```bash
+clip2png screenshot
+png2text screenshot.png --visual --color --width 120
+png2text screenshot.png --visual --width 120
+png2text screenshot.png --color --width 120
+png2text screenshot.png -o screenshot.ans --visual --color --width 120
+less -R screenshot.ans
+```
+
+`--visual` combines OCR words (real selectable characters) with Unicode Braille graphics.
+`--color` outputs 24-bit ANSI foreground and background colors; with `--width` it
+paints the entire line including trailing background cells. `--width` defaults to 120.
+`--aspect`, `--threshold`, `--confidence`, and `--psm` allow tuning.
+The reconstructed layout is approximate; OCR may still miss or misidentify text.
+When saving use `.ans` for ANSI output and `.txt` for monochrome output.
+The `png2md` alias uses the same tool and options.
+
+
 <p align=center><b>- oOo -</b></p>
+
+

@@ -167,6 +167,12 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--empty-threshold", type=float, default=0.20, help="Reject table detection above this empty-cell ratio. Default: 0.20.");
     parser.add_argument("--no-table-detection", action="store_true", help="Skip img2table table detection.");
     parser.add_argument("--plain", action="store_true", help="Do not wrap OCR text in a Markdown code block.");
+    parser.add_argument("--visual", action="store_true", help="Reconstruct graphic regions as Unicode Braille while preserving OCR text.");
+    parser.add_argument("--color", action="store_true", help="Use ANSI 24-bit text and background colors (with or without --visual).");
+    parser.add_argument("--width", "--cols", type=int, default=120, help="Exact terminal canvas width in columns (default: 120).");
+    parser.add_argument("--aspect", type=float, default=1.65, help="Terminal cell height/width ratio (default: 1.65).");
+    parser.add_argument("--threshold", type=float, default=50.0, help="Graphic foreground/background distance threshold (default: 50).");
+    parser.add_argument("--confidence", type=float, default=25.0, help="Minimum OCR word confidence for visual output (default: 25).");
     parser.add_argument("--encoding", default="utf-8", help="Output encoding. Default: utf-8.");
     return (parser);
 
@@ -175,6 +181,12 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
     args = create_parser().parse_args(arguments);
     if args.scale is not None and args.scale <= 0:
         raise ValueError("--scale must be greater than zero.");
+    if args.width < 10:
+        raise ValueError("--width must be at least 10 columns.");
+    if args.aspect <= 0:
+        raise ValueError("--aspect must be greater than zero.");
+    if not 0 <= args.confidence <= 100:
+        raise ValueError("--confidence must be between 0 and 100.");
     reporter = Reporter(options);
     image_path = require_input_file(args.image, (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"));
     cv2, pytesseract = import_ocr_modules();
@@ -189,6 +201,25 @@ def main(arguments: list[str] | None, options: GlobalOptions) -> int:
         reporter.verbose(f"OCR mode automatically selected: {selected_mode}.");
     else:
         reporter.verbose(f"OCR mode selected: {selected_mode}.");
+    if args.visual or args.color:
+        try:
+            from PIL import Image;
+        except ImportError as error:
+            raise ImportError("Pillow is required for --visual and --color. Install sumdoc[ocr].") from error;
+        from sumdoc.tools.visualtext import get_words, render;
+        # Screenshot coordinates must be measured on the ORIGINAL image, not on a scaled OCR copy.
+        with Image.open(image_path) as original:
+            rgb = original.convert("RGB");
+            default_psm, _ = MODE_DEFAULTS[selected_mode];
+            psm = args.psm if args.psm is not None else 11;
+            words = get_words(image_path, psm, args.lang, pytesseract);
+            result = render(rgb, words, args.width, args.aspect, args.threshold,
+                            args.confidence, visual=args.visual, color=args.color);
+        output_path = resolve_single_output(image_path, options, ".ans" if args.color else ".txt", args.name);
+        write_text_output(result, output_path, options, args.encoding);
+        if output_path is not None:
+            reporter.success(f"Visual text written to: {output_path}");
+        return (0);
     console_like = selected_mode == "terminal" or any(marker in quick_text for marker in CONSOLE_MARKERS);
     result = None;
     if console_like:

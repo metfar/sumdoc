@@ -218,3 +218,7 @@ human `PIPE/LF` representation cannot be accidentally confused.
 `tableconvert` can read R `fst` files without R through the optional `fstio`
 backend (`pip install sumdoc[fst]`). FST output remains read-only in this
 revision.
+
+<p align=center><b>- oOo -</b></p>
+
+

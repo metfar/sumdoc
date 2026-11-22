@@ -1,3 +1,12 @@
+## 0.3.2.7 — Reconstrucción visual OCR y color ANSI (2026-11-22)
+
+- `png2text` y su alias `png2md` incorporan `--visual` y `--color` combinables.
+- `--width N` fija el ancho real del lienzo, incluidos espacios finales y fondo ANSI.
+- OCR reconocido como texto verdadero y gráficos aproximados en Unicode Braille.
+- Colores ANSI RGB de primer plano y fondo por celda; salida `.ans` cuando se guarda con `--color`.
+- Opciones `--aspect`, `--threshold` y `--confidence`; salida OCR/Markdown clásica preservada.
+- Pruebas del ancho y de las cuatro combinaciones; integración verificada con Tesseract.
+
 ## 0.3.2.4 — Integración SUMTAB/sumX (2026-11-08)
 
 - `tableconvert` admite entrada y salida `.sumx` y reconoce metadatos sumX en SQLite existente.
