@@ -150,7 +150,7 @@ def render_markdown(console, text: str) -> None:
         if fenced is None and not fence and _SUM_DOC_END_MARKER.fullmatch(line):
             flush_buffer();
             from rich.text import Text;
-            console.print(Text("*- oOo -*", style="italic"), justify="center");
+            console.print(Text("- oOo -", style="bold"), justify="center");
             index += 1;
             continue;
         if fenced is None and index + 1 < len(lines):
